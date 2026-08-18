@@ -245,20 +245,22 @@ const [isHydrated, setIsHydrated] = useState(false);
   image_url: string;
   guest_name: string | null;
   likes: number;
+  template_id: string | null;
   created_at: string;
 };
 
 const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
 const [visitorId, setVisitorId] = useState("");
 const [likedPhotoIds, setLikedPhotoIds] = useState<number[]>([]);
+const [galleryFilter, setGalleryFilter] = useState("all");
 
 useEffect(() => {
   let id = localStorage.getItem("memoria-visitor-id");
 
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem("memoria-visitor-id", id);
-  }
+if (!id) {
+  id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  localStorage.setItem("memoria-visitor-id", id);
+}
 
   setVisitorId(id);
 }, []);
@@ -336,6 +338,7 @@ useEffect(() => {
 }, [screen, visitorId]);
 
   const [cameraError, setCameraError] = useState("");
+  const [cameraFacing, setCameraFacing] = useState<"user" | "environment">("user");
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -431,9 +434,9 @@ const requiredPhotos = selectedTemplateData?.photoCount ?? 3;
         setCameraError("");
 
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "user",
-          },
+video: {
+  facingMode: cameraFacing,
+},
           audio: false,
         });
 
@@ -466,7 +469,13 @@ const requiredPhotos = selectedTemplateData?.photoCount ?? 3;
         streamRef.current = null;
       }
     };
-  }, [screen]);
+}, [screen, cameraFacing]);
+
+function toggleCamera() {
+  setCameraFacing((current) =>
+    current === "user" ? "environment" : "user"
+  );
+}
 
 async function uploadPhotosToSupabase() {
   const uploadedUrls: string[] = [];
@@ -500,11 +509,12 @@ async function uploadPhotosToSupabase() {
 
   // Simpan gambar ke database
   if (uploadedUrls.length > 0) {
-    const galleryRows = uploadedUrls.map((url) => ({
-      image_url: url,
-      guest_name: guestName,
-      likes: 0,
-    }));
+const galleryRows = uploadedUrls.map((url) => ({
+  image_url: url,
+  guest_name: guestName,
+  likes: 0,
+  template_id: selectedTemplate,
+}));
 
     const { error: databaseError } = await supabase
       .from("gallery_photos")
@@ -522,7 +532,7 @@ async function uploadPhotosToSupabase() {
 async function loadGalleryFromSupabase(): Promise<GalleryItem[]> {
   const { data, error } = await supabase
     .from("gallery_photos")
-    .select("id, image_url, guest_name, likes, created_at")
+    .select("id, image_url, guest_name, likes, template_id, created_at")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -1132,6 +1142,27 @@ if (screen === "gallery") {
             <p className="mt-2 text-sm text-[#9a817b]">
               Semua momen, satu kenangan.
             </p>
+            <div className="mt-6 flex justify-center gap-2">
+  {[
+    { id: "all", label: "Semua" },
+    { id: "polaroid", label: "Polaroid" },
+    { id: "4r", label: "4R" },
+    { id: "2r", label: "2R" },
+  ].map((filter) => (
+    <button
+      key={filter.id}
+      type="button"
+      onClick={() => setGalleryFilter(filter.id)}
+      className={`rounded-full border px-4 py-2 text-xs transition ${
+        galleryFilter === filter.id
+          ? "border-[#d98aaa] bg-[#d98aaa] text-white"
+          : "border-[#d8b7b3] bg-white/70 text-[#8d7770]"
+      }`}
+    >
+      {filter.label}
+    </button>
+  ))}
+</div>
           </div>
 
           {galleryItems.length === 0 ? (
@@ -1139,36 +1170,69 @@ if (screen === "gallery") {
               Belum ada gambar.
             </p>
           ) : (
-            <div className="mt-8 grid grid-cols-2 gap-4">
+            <div className="mt-8 grid grid-cols-2 gap-3">
 
-{galleryItems.map((photo) => (
-  <div
-    key={photo.id}
-    className="overflow-visible rounded-xl bg-white p-2 shadow-md"
-  >
-    <img
-      src={photo.image_url}
-      alt={`Gallery photo ${photo.id}`}
-      className="h-full w-full rounded-lg object-cover"
-    />
-
-<div className="mt-2 flex items-center justify-between bg-white px-2 py-2">
-  <span className="text-xs text-black">
-    {photo.guest_name || "Guest"}
-  </span>
-
-<button
-  type="button"
-  onClick={() => likePhoto(photo.id, photo.likes)}
-  className={`rounded-full px-3 py-1 text-xs transition active:scale-90 ${
-    likedPhotoIds.includes(photo.id)
-      ? "bg-pink-400 text-white"
-      : "bg-pink-200 text-black"
-  }`}
+{galleryItems
+  .filter(
+    (photo) =>
+      galleryFilter === "all" ||
+      photo.template_id === galleryFilter
+  )
+  .map((photo) => (
+<div
+  key={photo.id}
+  className="overflow-visible bg-transparent p-0"
 >
-  {likedPhotoIds.includes(photo.id) ? "♥" : "♡"} {photo.likes}
-</button>
+{photo.template_id === "polaroid" && (
+  <PolaroidFrame photo={photo.image_url} />
+)}
+
+{photo.template_id === "4r" && (
+  <FourRFrame photos={[photo.image_url]} />
+)}
+
+{photo.template_id === "2r" && (
+  <TwoRFrame photos={[photo.image_url]} />
+)}
+
+{!photo.template_id && (
+  <img
+    src={photo.image_url}
+    alt={`Gallery photo ${photo.id}`}
+    className="h-full w-full rounded-lg object-cover"
+  />
+)}
+
+<div className="mt-1 flex items-center justify-between bg-white px-2 py-1">
+  <div className="flex flex-col text-[9px] leading-tight text-[#8d7770]">
+    <span>
+      {new Date(photo.created_at).toLocaleTimeString("en-MY", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}
+    </span>
+
+    <span>
+      {new Date(photo.created_at).toLocaleDateString("en-MY", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })}
+    </span>
   </div>
+
+  <button
+    type="button"
+    onClick={() => likePhoto(photo.id, photo.likes)}
+    className={`rounded-full px-2.5 py-1 text-[10px] transition active:scale-90 ${
+      likedPhotoIds.includes(photo.id)
+        ? "bg-pink-400 text-white"
+        : "bg-pink-200 text-black"
+    }`}
+  >
+    {likedPhotoIds.includes(photo.id) ? "♥" : "♡"} {photo.likes}
+  </button>
+</div>
   </div>
 ))}
 
@@ -1273,6 +1337,15 @@ style={{
               ))}
             </div>
           </div>
+
+         {/* TOMBOL ROTATE CAMERA */}
+          <button
+            type="button"
+            onClick={toggleCamera}
+            className="mt-5 rounded-full border border-[#c8aaa5] bg-white/70 px-5 py-2 text-xs text-[#8d7770] shadow-sm transition active:scale-95"
+          >
+            ↻ Tukar Kamera
+          </button>
 
           <button
             type="button"
