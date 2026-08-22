@@ -6,33 +6,99 @@ import html2canvas from "html2canvas-pro";
 
 
 type Screen = "home" | "guest" | "template" | "camera" | "preview" | "strip" | "gallery";
-function AdjustablePhoto({ photo }: { photo: string }) {
+function AdjustablePhoto({
+  photo,
+  isUploaded = false,
+}: {
+  photo: string;
+  isUploaded?: boolean;
+}) {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
+  const [imageRatio, setImageRatio] = useState(1);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
+
   const dragging = useRef(false);
   const startPoint = useRef({ x: 0, y: 0 });
   const startPosition = useRef({ x: 0, y: 0 });
 
-  function clampPosition(x: number, y: number, currentScale: number) {
+  function getImageSize(currentScale: number) {
     const container = containerRef.current;
 
-    if (!container) return { x, y };
+    if (!container) {
+      return {
+        width: 0,
+        height: 0,
+      };
+    }
 
-    const width = container.clientWidth;
-    const height = container.clientHeight;
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
 
-    const maxX = (width * (currentScale - 1)) / 2;
-    const maxY = (height * (currentScale - 1)) / 2;
+    const containerRatio =
+      containerWidth / containerHeight;
+
+    let width: number;
+    let height: number;
+
+    if (imageRatio > containerRatio) {
+      // Gambar lebih lebar → tinggi ikut frame
+      height = containerHeight;
+      width = height * imageRatio;
+    } else {
+      // Gambar lebih tinggi → lebar ikut frame
+      width = containerWidth;
+      height = width / imageRatio;
+    }
 
     return {
-      x: Math.max(-maxX, Math.min(maxX, x)),
-      y: Math.max(-maxY, Math.min(maxY, y)),
+      width: width * currentScale,
+      height: height * currentScale,
     };
   }
 
-  function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+  function clampPosition(
+    x: number,
+    y: number,
+    currentScale: number
+  ) {
+    const container = containerRef.current;
+
+    if (!container) {
+      return { x, y };
+    }
+
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+
+    const imageSize = getImageSize(currentScale);
+
+    const maxX = Math.max(
+      0,
+      (imageSize.width - containerWidth) / 2
+    );
+
+    const maxY = Math.max(
+      0,
+      (imageSize.height - containerHeight) / 2
+    );
+
+    return {
+      x: Math.max(
+        -maxX,
+        Math.min(maxX, x)
+      ),
+      y: Math.max(
+        -maxY,
+        Math.min(maxY, y)
+      ),
+    };
+  }
+
+  function handlePointerDown(
+    e: React.PointerEvent<HTMLDivElement>
+  ) {
     dragging.current = true;
 
     startPoint.current = {
@@ -45,10 +111,14 @@ function AdjustablePhoto({ photo }: { photo: string }) {
       y: position.y,
     };
 
-    e.currentTarget.setPointerCapture(e.pointerId);
+    e.currentTarget.setPointerCapture(
+      e.pointerId
+    );
   }
 
-  function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+  function handlePointerMove(
+    e: React.PointerEvent<HTMLDivElement>
+  ) {
     if (!dragging.current) return;
 
     const newX =
@@ -59,20 +129,39 @@ function AdjustablePhoto({ photo }: { photo: string }) {
       startPosition.current.y +
       (e.clientY - startPoint.current.y);
 
-    setPosition(clampPosition(newX, newY, scale));
+    setPosition(
+      clampPosition(
+        newX,
+        newY,
+        scale
+      )
+    );
   }
 
-  function handlePointerUp() {
+  function handlePointerUp(
+    e: React.PointerEvent<HTMLDivElement>
+  ) {
     dragging.current = false;
+
+    try {
+      e.currentTarget.releasePointerCapture(
+        e.pointerId
+      );
+    } catch {}
   }
 
-  function handleWheel(e: React.WheelEvent<HTMLDivElement>) {
+  function handleWheel(
+    e: React.WheelEvent<HTMLDivElement>
+  ) {
     e.preventDefault();
 
     setScale((current) => {
       const next = Math.min(
         3,
-        Math.max(1, current - e.deltaY * 0.001)
+        Math.max(
+          1,
+          current - e.deltaY * 0.001
+        )
       );
 
       setPosition((currentPosition) =>
@@ -101,8 +190,39 @@ function AdjustablePhoto({ photo }: { photo: string }) {
         src={photo}
         alt="Photo"
         draggable={false}
-        className="absolute left-1/2 top-1/2 h-full w-full max-w-none select-none object-cover"
+        onLoad={(e) => {
+          const img = e.currentTarget;
+
+          if (
+            img.naturalWidth > 0 &&
+            img.naturalHeight > 0
+          ) {
+            setImageRatio(
+              img.naturalWidth /
+                img.naturalHeight
+            );
+          }
+        }}
+        className="absolute left-1/2 top-1/2 max-w-none select-none"
         style={{
+          width:
+            imageRatio >
+            (containerRef.current
+              ? containerRef.current.clientWidth /
+                containerRef.current.clientHeight
+              : 1)
+              ? "auto"
+              : "100%",
+
+          height:
+            imageRatio >
+            (containerRef.current
+              ? containerRef.current.clientWidth /
+                containerRef.current.clientHeight
+              : 1)
+              ? "100%"
+              : "auto",
+
           transform: `
             translate(-50%, -50%)
             translate(${position.x}px, ${position.y}px)
@@ -113,7 +233,14 @@ function AdjustablePhoto({ photo }: { photo: string }) {
     </div>
   );
 }
-function PolaroidFrame({ photo }: { photo: string }) {
+
+function PolaroidFrame({
+  photo,
+  isUploaded = false,
+}: {
+  photo: string;
+  isUploaded?: boolean;
+}) {
   return (
     <div className="relative mx-auto aspect-[1080/1440] w-full max-w-sm overflow-hidden bg-[#eee5df]">
       <div
@@ -125,7 +252,10 @@ function PolaroidFrame({ photo }: { photo: string }) {
           height: "62.5%",
         }}
       >
-<AdjustablePhoto photo={photo} />
+<AdjustablePhoto
+  photo={photo}
+  isUploaded={isUploaded}
+/>
       </div>
 
       <img
@@ -138,7 +268,13 @@ function PolaroidFrame({ photo }: { photo: string }) {
   );
 }
 
-function FourRFrame({ photos }: { photos: string[] }) {
+function FourRFrame({
+  photos,
+  uploadedPhotoIndexes = [],
+}: {
+  photos: string[];
+  uploadedPhotoIndexes?: number[];
+}) {
   return (
     <div className="relative mx-auto aspect-[1200/1800] w-full max-w-sm overflow-hidden bg-[#eee5df]">
       {/* Photo 1 */}
@@ -151,7 +287,10 @@ function FourRFrame({ photos }: { photos: string[] }) {
           height: "36.1%",
         }}
       >
-        {photos[0] && <AdjustablePhoto photo={photos[0]} />}
+  <AdjustablePhoto
+  photo={photos[0]}
+  isUploaded={uploadedPhotoIndexes.includes(0)}
+/>
       </div>
 
       {/* Photo 2 */}
@@ -164,7 +303,10 @@ function FourRFrame({ photos }: { photos: string[] }) {
           height: "36.1%",
         }}
       >
-        {photos[1] && <AdjustablePhoto photo={photos[1]} />}
+        <AdjustablePhoto
+  photo={photos[1]}
+  isUploaded={uploadedPhotoIndexes.includes(1)}
+/>
       </div>
 
       {/* 4R overlay */}
@@ -237,8 +379,9 @@ const [isHydrated, setIsHydrated] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [timer, setTimer] = useState(3);
   const [countdown, setCountdown] = useState<number | null>(null);
-  const [photos, setPhotos] = useState<string[]>([]);
-  const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
+const [photos, setPhotos] = useState<string[]>([]);
+const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
+const [uploadedPhotoIndexes, setUploadedPhotoIndexes] = useState<number[]>([]);
 
   type GalleryItem = {
   id: number;
@@ -265,18 +408,13 @@ if (!id) {
   setVisitorId(id);
 }, []);
   
-  useEffect(() => {
+useEffect(() => {
   const savedScreen = sessionStorage.getItem("memoria-screen");
-  const savedPhotos = localStorage.getItem("memoria-photos");
   const savedTemplate = sessionStorage.getItem("memoria-template");
   const savedGuestName = sessionStorage.getItem("memoria-guest-name");
 
   if (savedScreen) {
     setScreen(savedScreen as Screen);
-  }
-
-  if (savedPhotos) {
-    setPhotos(JSON.parse(savedPhotos));
   }
 
   if (savedTemplate) {
@@ -294,7 +432,6 @@ useEffect(() => {
   if (!isHydrated) return;
 
   sessionStorage.setItem("memoria-screen", screen);
-  localStorage.setItem("memoria-photos", JSON.stringify(photos));
   sessionStorage.setItem("memoria-template", selectedTemplate);
   sessionStorage.setItem("memoria-guest-name", guestName);
 }, [screen, photos, selectedTemplate, guestName, isHydrated]);
@@ -424,22 +561,46 @@ useEffect(() => {
 
 const requiredPhotos = selectedTemplateData?.photoCount ?? 3;
 
-function handleGalleryUpload(
+async function handleGalleryUpload(
   event: React.ChangeEvent<HTMLInputElement>
 ) {
-  const file = event.target.files?.[0];
+  const files = Array.from(event.target.files ?? []);
 
-  if (!file) return;
+  if (files.length === 0) return;
 
-  const reader = new FileReader();
+  const remainingSlots = requiredPhotos - photos.length;
+  const selectedFiles = files.slice(0, remainingSlots);
 
-  reader.onload = () => {
-    const imageUrl = reader.result as string;
+  const startIndex = photos.length;
 
-    setPhotos((current) => [...current, imageUrl]);
-  };
+  const imageUrls = await Promise.all(
+    selectedFiles.map(
+      (file) =>
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
 
-  reader.readAsDataURL(file);
+          reader.onload = () => {
+            resolve(reader.result as string);
+          };
+
+          reader.onerror = reject;
+
+          reader.readAsDataURL(file);
+        })
+    )
+  );
+
+  setPhotos((current) => [
+    ...current,
+    ...imageUrls,
+  ]);
+
+  setUploadedPhotoIndexes((current) => [
+    ...current,
+    ...imageUrls.map(
+      (_, index) => startIndex + index
+    ),
+  ]);
 
   event.target.value = "";
 }
@@ -449,26 +610,6 @@ function handleGalleryUpload(
     if (screen !== "camera") return;
 
     let mounted = true;
-
-function handleGalleryUpload(
-  event: React.ChangeEvent<HTMLInputElement>
-) {
-  const file = event.target.files?.[0];
-
-  if (!file) return;
-
-  const reader = new FileReader();
-
-  reader.onload = () => {
-    const imageUrl = reader.result as string;
-
-    setPhotos((current) => [...current, imageUrl]);
-  };
-
-  reader.readAsDataURL(file);
-
-  event.target.value = "";
-}
 
     async function startCamera() {
       try {
@@ -1024,7 +1165,10 @@ useEffect(() => {
 )}
 
 {selectedTemplate === "4r" && photos.length >= 2 && (
-  <FourRFrame photos={photos} />
+  <FourRFrame
+    photos={photos}
+    uploadedPhotoIndexes={uploadedPhotoIndexes}
+  />
 )}
 
 {selectedTemplate === "2r" && photos.length >= 3 && (
@@ -1386,6 +1530,7 @@ style={{
   ref={galleryInputRef}
   type="file"
   accept="image/*"
+  multiple
   hidden
   onChange={handleGalleryUpload}
 />
