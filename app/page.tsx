@@ -22,6 +22,12 @@ function AdjustablePhoto({
   const dragging = useRef(false);
   const startPoint = useRef({ x: 0, y: 0 });
   const startPosition = useRef({ x: 0, y: 0 });
+  const activePointers = useRef(
+  new Map<number, { x: number; y: number }>()
+);
+
+const pinchStartDistance = useRef(0);
+const pinchStartScale = useRef(1);
 
   function getImageSize(currentScale: number) {
     const container = containerRef.current;
@@ -96,9 +102,37 @@ function AdjustablePhoto({
     };
   }
 
-  function handlePointerDown(
-    e: React.PointerEvent<HTMLDivElement>
-  ) {
+function handlePointerDown(
+  e: React.PointerEvent<HTMLDivElement>
+) {
+  activePointers.current.set(e.pointerId, {
+    x: e.clientX,
+    y: e.clientY,
+  });
+
+  e.currentTarget.setPointerCapture(
+    e.pointerId
+  );
+
+  if (activePointers.current.size === 2) {
+    dragging.current = false;
+
+    const points = Array.from(
+      activePointers.current.values()
+    );
+
+    const dx = points[1].x - points[0].x;
+    const dy = points[1].y - points[0].y;
+
+    pinchStartDistance.current =
+      Math.hypot(dx, dy);
+
+    pinchStartScale.current = scale;
+
+    return;
+  }
+
+  if (activePointers.current.size === 1) {
     dragging.current = true;
 
     startPoint.current = {
@@ -110,45 +144,97 @@ function AdjustablePhoto({
       x: position.x,
       y: position.y,
     };
+  }
+}
 
-    e.currentTarget.setPointerCapture(
+function handlePointerMove(
+  e: React.PointerEvent<HTMLDivElement>
+) {
+  if (!activePointers.current.has(e.pointerId)) {
+    return;
+  }
+
+  activePointers.current.set(e.pointerId, {
+    x: e.clientX,
+    y: e.clientY,
+  });
+
+  // PINCH — dua jari
+  if (activePointers.current.size === 2) {
+    const points = Array.from(
+      activePointers.current.values()
+    );
+
+    const dx = points[1].x - points[0].x;
+    const dy = points[1].y - points[0].y;
+
+    const distance = Math.hypot(dx, dy);
+
+    if (pinchStartDistance.current > 0) {
+      const nextScale = Math.min(
+        3,
+        Math.max(
+          1,
+          pinchStartScale.current *
+            (distance /
+              pinchStartDistance.current)
+        )
+      );
+
+      setScale(nextScale);
+
+      setPosition((currentPosition) =>
+        clampPosition(
+          currentPosition.x,
+          currentPosition.y,
+          nextScale
+        )
+      );
+    }
+
+    return;
+  }
+
+  // DRAG — satu jari
+  if (!dragging.current) return;
+
+  const newX =
+    startPosition.current.x +
+    (e.clientX - startPoint.current.x);
+
+  const newY =
+    startPosition.current.y +
+    (e.clientY - startPoint.current.y);
+
+  setPosition(
+    clampPosition(
+      newX,
+      newY,
+      scale
+    )
+  );
+}
+
+function handlePointerUp(
+  e: React.PointerEvent<HTMLDivElement>
+) {
+  activePointers.current.delete(
+    e.pointerId
+  );
+
+  if (activePointers.current.size < 2) {
+    pinchStartDistance.current = 0;
+  }
+
+  dragging.current =
+    activePointers.current.size === 1;
+
+  try {
+    e.currentTarget.releasePointerCapture(
       e.pointerId
     );
-  }
-
-  function handlePointerMove(
-    e: React.PointerEvent<HTMLDivElement>
-  ) {
-    if (!dragging.current) return;
-
-    const newX =
-      startPosition.current.x +
-      (e.clientX - startPoint.current.x);
-
-    const newY =
-      startPosition.current.y +
-      (e.clientY - startPoint.current.y);
-
-    setPosition(
-      clampPosition(
-        newX,
-        newY,
-        scale
-      )
-    );
-  }
-
-  function handlePointerUp(
-    e: React.PointerEvent<HTMLDivElement>
-  ) {
-    dragging.current = false;
-
-    try {
-      e.currentTarget.releasePointerCapture(
-        e.pointerId
-      );
-    } catch {}
-  }
+  } catch {}
+}
 
   function handleWheel(
     e: React.WheelEvent<HTMLDivElement>
