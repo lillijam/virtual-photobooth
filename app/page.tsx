@@ -6,6 +6,13 @@ import html2canvas from "html2canvas-pro";
 
 
 type Screen = "home" | "guest" | "template" | "camera" | "preview" | "strip" | "gallery" | "gallery-detail";
+type PhotoAdjustment = {
+  x: number;
+  y: number;
+  scale: number;
+};
+
+const photoAdjustments = new Map<string, PhotoAdjustment>();
 function AdjustablePhoto({
   photo,
   isUploaded = false,
@@ -15,9 +22,25 @@ function AdjustablePhoto({
   isUploaded?: boolean;
   interactive?: boolean;
 }) {
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [scale, setScale] = useState(1);
+const savedAdjustment = photoAdjustments.get(photo);
+
+const [position, setPosition] = useState({
+  x: savedAdjustment?.x ?? 0,
+  y: savedAdjustment?.y ?? 0,
+});
+
+const [scale, setScale] = useState(
+  savedAdjustment?.scale ?? 1
+);
   const [imageRatio, setImageRatio] = useState(1);
+
+  useEffect(() => {
+  photoAdjustments.set(photo, {
+    x: position.x,
+    y: position.y,
+    scale,
+  });
+}, [photo, position.x, position.y, scale]);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -495,6 +518,7 @@ const [isHydrated, setIsHydrated] = useState(false);
   const [timer, setTimer] = useState(3);
   const [countdown, setCountdown] = useState<number | null>(null);
 const [photos, setPhotos] = useState<string[]>([]);
+const [finalFrameImage, setFinalFrameImage] = useState<string | null>(null);
 const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
 const [uploadedPhotoIndexes, setUploadedPhotoIndexes] = useState<number[]>([]);
 
@@ -523,6 +547,8 @@ const [galleryFilter, setGalleryFilter] = useState("all");
 const [selectedGalleryPhoto, setSelectedGalleryPhoto] =
   useState<GalleryDetail | null>(null);
 
+const [detailShareReady, setDetailShareReady] = useState(false);
+
 useEffect(() => {
   let id = localStorage.getItem("memoria-visitor-id");
 
@@ -533,6 +559,22 @@ if (!id) {
 
   setVisitorId(id);
 }, []);
+
+useEffect(() => {
+  if (screen !== "gallery-detail" || !selectedGalleryPhoto) {
+    setDetailShareReady(false);
+    return;
+  }
+
+  setDetailShareReady(false);
+
+  const timer = setTimeout(async () => {
+    await prepareSharePhoto("gallery-detail-photo");
+    setDetailShareReady(true);
+  }, 300);
+
+  return () => clearTimeout(timer);
+}, [screen, selectedGalleryPhoto]);
   
 useEffect(() => {
   const savedScreen = sessionStorage.getItem("memoria-screen");
@@ -786,21 +828,37 @@ function toggleCamera() {
 }
 
 async function uploadPhotosToSupabase() {
-  const uploadedUrls: string[] = [];
-  const stripId = crypto.randomUUID();
+  try {
+    const element = document.getElementById("final-frame-content");
 
-  for (let i = 0; i < photos.length; i++) {
-    const photo = photos[i];
+    if (!element) {
+      console.error("Final frame not found");
+      return null;
+    }
 
-    const response = await fetch(photo);
-    const blob = await response.blob();
+    // Jadikan seluruh frame + semua gambar sebagai SATU gambar
+    const canvas = await html2canvas(element, {
+      useCORS: true,
+      backgroundColor: null,
+      scale: 2,
+    });
 
-    const fileName = `photo-${Date.now()}-${i}.jpg`;
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/png")
+    );
 
+    if (!blob) {
+      console.error("Failed to create image blob");
+      return null;
+    }
+
+    const fileName = `photo-${Date.now()}.png`;
+
+    // Upload SATU gambar sahaja
     const { error } = await supabase.storage
       .from("memoria-gallery")
       .upload(fileName, blob, {
-        contentType: "image/jpeg",
+        contentType: "image/png",
         upsert: false,
       });
 
@@ -813,30 +871,31 @@ async function uploadPhotosToSupabase() {
       .from("memoria-gallery")
       .getPublicUrl(fileName);
 
-    uploadedUrls.push(data.publicUrl);
-  }
+    const uploadedUrl = data.publicUrl;
 
-  // Simpan gambar ke database
-  if (uploadedUrls.length > 0) {
-const galleryRows = uploadedUrls.map((url) => ({
-  image_url: url,
-  guest_name: guestName,
-  likes: 0,
-  template_id: selectedTemplate,
-  strip_id: stripId,
-}));
+    // Simpan SATU row sahaja ke database
+    const galleryRow = {
+      image_url: uploadedUrl,
+      guest_name: guestName,
+      likes: 0,
+      template_id: selectedTemplate,
+      strip_id: null,
+    };
 
     const { error: databaseError } = await supabase
       .from("gallery_photos")
-      .insert(galleryRows);
+      .insert(galleryRow);
 
     if (databaseError) {
       console.error("Database insert failed:", databaseError);
       return null;
     }
-  }
 
-  return uploadedUrls;
+    return [uploadedUrl];
+  } catch (error) {
+    console.error("Upload failed:", error);
+    return null;
+  }
 }
 
 async function loadGalleryFromSupabase(): Promise<GalleryItem[]> {
@@ -868,13 +927,12 @@ async function loadGalleryFromSupabase(): Promise<GalleryItem[]> {
     }
 
     const existing = grouped.get(`strip-${item.strip_id}`);
-
-    if (existing) {
-      existing.stripPhotos = [
-        ...(existing.stripPhotos ?? []),
-        item,
-      ];
-    } else {
+if (existing) {
+  existing.stripPhotos = [
+    item,
+    ...(existing.stripPhotos ?? []),
+  ];
+} else {
       grouped.set(`strip-${item.strip_id}`, {
         ...item,
         stripPhotos: [item],
@@ -882,8 +940,15 @@ async function loadGalleryFromSupabase(): Promise<GalleryItem[]> {
     }
   }
 
+for (const item of grouped.values()) {
+  if (item.stripPhotos && item.stripPhotos.length > 1) {
+    item.stripPhotos.sort((a, b) => a.id - b.id);
+  }
+}
+
   return Array.from(grouped.values());
 }
+
 
 async function likePhoto(photoId: number, currentLikes: number) {
   if (!visitorId) return;
@@ -1079,23 +1144,6 @@ async function sharePhoto(elementId: string) {
 }
 
   function takePhoto() {
-    useEffect(() => {
-  if (screen === "strip") {
-    const timer = setTimeout(() => {
-      prepareSharePhoto("final-frame");
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }
-
-  if (screen === "gallery-detail") {
-    const timer = setTimeout(() => {
-      prepareSharePhoto("gallery-detail-photo");
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }
-}, [screen, selectedGalleryPhoto]);
     if (!videoRef.current || countdown !== null) return;
 
     if (timer === 0) {
@@ -1413,11 +1461,14 @@ useEffect(() => {
               {guestName}
             </p>
 
-            <div
+<div
   id="final-frame"
   className="mt-8 rounded-2xl bg-white/60 p-4 shadow-md"
 >
-              <div className="space-y-3">
+  <div
+    id="final-frame-content"
+    className="space-y-3"
+  >
 {selectedTemplate === "polaroid" && photos[0] && (
   <PolaroidFrame photo={photos[0]} />
 )}
@@ -1468,21 +1519,33 @@ useEffect(() => {
 
 <button
   type="button"
-  onClick={async () => {
-    const uploadedUrls = await uploadPhotosToSupabase();
+onClick={async () => {
+const uploadedUrls = await uploadPhotosToSupabase();
 
-    if (!uploadedUrls) {
-      alert("Gambar gagal disimpan. Sila cuba lagi.");
-      return;
-    }
+if (!uploadedUrls) {
+  alert("Gambar gagal disimpan. Sila cuba lagi.");
+  return;
+}
 
-    setGalleryPhotos((current) => [
-      ...current,
-      ...uploadedUrls,
-    ]);
+  const element = document.getElementById("final-frame-content");
 
-    setScreen("strip");
-  }}
+  if (element) {
+    const canvas = await html2canvas(element, {
+      useCORS: true,
+      backgroundColor: null,
+      scale: 2,
+    });
+
+    setFinalFrameImage(canvas.toDataURL("image/png"));
+  }
+
+  setGalleryPhotos((current) => [
+    ...current,
+    ...uploadedUrls,
+  ]);
+
+  setScreen("strip");
+}}
   className="mt-6 transition active:scale-95"
 >
   <img
@@ -1519,7 +1582,7 @@ if (screen === "strip") {
             Home
           </button>
           
-          <button
+<button
   type="button"
   onClick={() => sharePhoto("final-frame")}
   className="absolute right-6 top-8 z-20 transition active:scale-90"
@@ -1535,31 +1598,19 @@ if (screen === "strip") {
             Your Strip!
           </h1>
 
-          <div
+<div
   id="final-frame"
   className="mt-8 w-full max-w-xs"
 >
-            {selectedTemplate === "polaroid" && photos[0] && (
-<PolaroidFrame
-  photo={photos[0]}
-  interactive={false}
-/>
-            )}
-
-            {selectedTemplate === "4r" && photos.length >= 2 && (
-<FourRFrame
-  photos={photos}
-  interactive={false}
-/>
-            )}
-
-            {selectedTemplate === "2r" && photos.length >= 3 && (
-<TwoRFrame
-  photos={photos}
-  interactive={false}
-/>
-            )}
-          </div>
+  {finalFrameImage && (
+    <img
+      src={finalFrameImage}
+      alt="Your Strip"
+      className="w-full h-auto"
+      draggable={false}
+    />
+  )}
+</div>
 
           <h2 className="mt-6 text-lg font-bold text-[#d96f9b]">
             Terima Kasih!
@@ -1666,42 +1717,13 @@ setSelectedGalleryPhoto({
 }}
   className="cursor-pointer overflow-visible bg-transparent p-0 transition active:scale-[0.98]"
 >
-{photo.template_id === "polaroid" && (
-  <PolaroidFrame
-    photo={photo.image_url}
-    interactive={false}
-  />
-)}
-
-{photo.template_id === "4r" && (
-  <FourRFrame
-    photos={
-      photo.stripPhotos?.map(
-        (item) => item.image_url
-      ) ?? [photo.image_url]
-    }
-    interactive={false}
-  />
-)}
-
-{photo.template_id === "2r" && (
-  <TwoRFrame
-    photos={
-      photo.stripPhotos?.map(
-        (item) => item.image_url
-      ) ?? [photo.image_url]
-    }
-    interactive={false}
-  />
-)}
-
-{!photo.template_id && (
-  <img
-    src={photo.image_url}
-    alt={`Gallery photo ${photo.id}`}
-    className="h-full w-full rounded-lg object-cover"
-  />
-)}
+<img
+  src={photo.image_url}
+  alt={`Gallery photo ${photo.id}`}
+  loading="lazy"
+  className="h-auto w-full object-contain"
+  draggable={false}
+/>
 
 <div className="mt-1 flex items-center justify-between bg-white px-2 py-1">
   <div className="flex flex-col text-[9px] leading-tight text-[#8d7770]">
@@ -1779,8 +1801,13 @@ if (screen === "gallery-detail" && selectedGalleryPhoto) {
 
 <button
   type="button"
+  disabled={!detailShareReady}
   onClick={() => sharePhoto("gallery-detail-photo")}
-  className="transition active:scale-90"
+  className={`transition active:scale-90 ${
+    !detailShareReady
+      ? "pointer-events-none opacity-40"
+      : ""
+  }`}
 >
   <img
     src="/icons/Share.svg"
@@ -1795,34 +1822,13 @@ if (screen === "gallery-detail" && selectedGalleryPhoto) {
   id="gallery-detail-photo"
   className="mt-8 overflow-hidden bg-transparent p-0 shadow-md"
 >
-            {photo.template_id === "polaroid" && (
-              <PolaroidFrame
-  photo={photo.image_url}
-  interactive={false}
+<img
+  src={photo.image_url}
+  alt="Gallery photo"
+  loading="lazy"
+  className="h-auto w-full object-contain"
+  draggable={false}
 />
-            )}
-
-{photo.template_id === "4r" && (
-<FourRFrame
-  photos={
-    photo.stripPhotos?.map(
-      (item) => item.image_url
-    ) ?? [photo.image_url]
-  }
-  interactive={false}
-/>
-)}
-
-{photo.template_id === "2r" && (
-<TwoRFrame
-  photos={
-    photo.stripPhotos?.map(
-      (item) => item.image_url
-    ) ?? [photo.image_url]
-  }
-  interactive={false}
-/>
-)}
 
             {!photo.template_id && (
               <img
