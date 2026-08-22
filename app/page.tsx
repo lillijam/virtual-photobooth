@@ -517,6 +517,7 @@ const [isHydrated, setIsHydrated] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [timer, setTimer] = useState(3);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [isSavingPhoto, setIsSavingPhoto] = useState(false);
 const [photos, setPhotos] = useState<string[]>([]);
 const [finalFrameImage, setFinalFrameImage] = useState<string | null>(null);
 const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
@@ -539,6 +540,8 @@ type GalleryDetail = GalleryItem & {
 };
 
 const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
+const [isGalleryLoading, setIsGalleryLoading] = useState(false);
+const [galleryError, setGalleryError] = useState(false);
 const [visitorId, setVisitorId] = useState("");
 const [likedPhotoIds, setLikedPhotoIds] = useState<number[]>([]);
 
@@ -621,26 +624,38 @@ useEffect(() => {
 }, [galleryPhotos]);
 
 useEffect(() => {
-  if (screen === "gallery" && visitorId) {
-    loadGalleryFromSupabase().then((items) => {
+  if (screen !== "gallery" || !visitorId) return;
+
+  setIsGalleryLoading(true);
+  setGalleryError(false);
+
+  loadGalleryFromSupabase()
+    .then((items) => {
       setGalleryItems(items);
+    })
+    .catch((error) => {
+      console.error("Gallery loading failed:", error);
+      setGalleryError(true);
+    })
+    .finally(() => {
+      setIsGalleryLoading(false);
     });
 
-    supabase
-      .from("gallery_likes")
-      .select("photo_id")
-      .eq("visitor_id", visitorId)
-      .then(({ data, error }) => {
-        if (error) {
-          console.error("Loading likes failed:", error);
-          return;
-        }
+      // 2. Load gallery likes
+  supabase
+    .from("gallery_likes")
+    .select("photo_id")
+    .eq("visitor_id", visitorId)
+    .then(({ data, error }) => {
+      if (error) {
+        console.error("Loading likes failed:", error);
+        return;
+      }
 
-        setLikedPhotoIds(
-          (data ?? []).map((item) => item.photo_id)
-        );
-      });
-  }
+      setLikedPhotoIds(
+        (data ?? []).map((item) => item.photo_id)
+      );
+    });
 }, [screen, visitorId]);
 
   const [cameraError, setCameraError] = useState("");
@@ -916,10 +931,15 @@ const { error } = await supabase.storage
       .from("gallery_photos")
       .insert(galleryRow);
 
-    if (databaseError) {
-      console.error("Database insert failed:", databaseError);
-      return null;
-    }
+if (databaseError) {
+  console.error("Database insert failed:", databaseError);
+
+  await supabase.storage
+    .from("memoria-gallery")
+    .remove([fileName]);
+
+  return null;
+}
 
    return {
   uploadedUrl,
@@ -1553,38 +1573,59 @@ useEffect(() => {
 
 <button
   type="button"
-onClick={async () => {
-  const result = await uploadPhotosToSupabase();
+  disabled={isSavingPhoto}
+  onClick={async () => {
+    if (isSavingPhoto) return;
 
-  if (!result) {
-    alert("Gambar gagal disimpan. Sila cuba lagi.");
-    return;
-  }
+    setIsSavingPhoto(true);
 
-  setFinalFrameImage(result.finalDataUrl);
+    try {
+      const result = await uploadPhotosToSupabase();
 
-  shareFileCache.current["final-frame"] = new File(
-    [result.blob],
-    "memoria-photo.png",
-    {
-      type: "image/png",
+      if (!result) {
+        alert("Gambar gagal disimpan. Sila cuba lagi.");
+        return;
+      }
+
+      setFinalFrameImage(result.finalDataUrl);
+
+      shareFileCache.current["final-frame"] = new File(
+        [result.blob],
+        "memoria-photo.png",
+        {
+          type: "image/png",
+        }
+      );
+
+      setGalleryPhotos((current) => [
+        ...current,
+        result.uploadedUrl,
+      ]);
+
+      setScreen("strip");
+    } catch (error) {
+      console.error("Save photo failed:", error);
+      alert("Gambar gagal disimpan. Sila cuba lagi.");
+    } finally {
+      setIsSavingPhoto(false);
     }
-  );
-
-  setGalleryPhotos((current) => [
-    ...current,
-    result.uploadedUrl,
-  ]);
-
-  setScreen("strip");
-}}
-  className="mt-6 transition active:scale-95"
+  }}
+  className={`mt-6 transition active:scale-95 ${
+    isSavingPhoto ? "pointer-events-none opacity-60" : ""
+  }`}
 >
-  <img
-    src="/icons/Gunakan%20Gambar.svg"
-    alt="Gunakan gambar"
-    className="w-40"
-  />
+  {isSavingPhoto ? (
+    <div className="flex w-40 items-center justify-center gap-2 rounded-full bg-white/70 px-5 py-3 text-sm text-[#8d7770]">
+      <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#d98aaa] border-t-transparent" />
+      Menyimpan...
+    </div>
+  ) : (
+    <img
+      src="/icons/Gunakan%20Gambar.svg"
+      alt="Gunakan gambar"
+      className="w-40"
+    />
+  )}
 </button>
 
           </section>
@@ -1724,78 +1765,99 @@ if (screen === "gallery") {
 </div>
           </div>
 
-          {galleryItems.length === 0 ? (
-            <p className="mt-12 text-center text-sm text-[#9a817b]">
-              Belum ada gambar.
-            </p>
-          ) : (
-            <div className="mt-8 grid grid-cols-2 gap-3">
+{isGalleryLoading ? (
+  <div className="mt-16 flex flex-col items-center justify-center text-center">
+    <span className="h-7 w-7 animate-spin rounded-full border-2 border-[#d98aaa] border-t-transparent" />
 
-{galleryItems
-  .filter(
-    (photo) =>
-      galleryFilter === "all" ||
-      photo.template_id === galleryFilter
-  )
-  .map((photo) => (
-<div
-  key={photo.id}
-onClick={() => {
-setSelectedGalleryPhoto({
-  ...photo,
-  stripPhotos: photo.stripPhotos ?? [photo],
-});
-  setScreen("gallery-detail");
-}}
-  className="cursor-pointer overflow-visible bg-transparent p-0 transition active:scale-[0.98]"
->
-<img
-  src={photo.image_url}
-  alt={`Gallery photo ${photo.id}`}
-  loading="lazy"
-  className="h-auto w-full object-contain"
-  draggable={false}
-/>
-
-<div className="mt-1 flex items-center justify-between bg-white px-2 py-1">
-  <div className="flex flex-col text-[9px] leading-tight text-[#8d7770]">
-    <span>
-      {new Date(photo.created_at).toLocaleTimeString("en-MY", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })}
-    </span>
-
-    <span>
-      {new Date(photo.created_at).toLocaleDateString("en-MY", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })}
-    </span>
+    <p className="mt-4 text-sm text-[#9a817b]">
+      Memuatkan galeri...
+    </p>
   </div>
+) : galleryError ? (
+  <div className="mt-16 flex flex-col items-center justify-center text-center">
+    <p className="text-sm text-[#8d7770]">
+      Galeri tidak dapat dimuatkan.
+    </p>
 
-  <button
-    type="button"
-    onClick={(e) => {
-  e.stopPropagation();
-  likePhoto(photo.id, photo.likes);
-}}
-    className={`rounded-full px-2.5 py-1 text-[10px] transition active:scale-90 ${
-      likedPhotoIds.includes(photo.id)
-        ? "bg-pink-400 text-white"
-        : "bg-pink-200 text-black"
-    }`}
-  >
-    {likedPhotoIds.includes(photo.id) ? "♥" : "♡"} {photo.likes}
-  </button>
-</div>
+    <button
+      type="button"
+      onClick={() => setScreen("gallery")}
+      className="mt-4 rounded-full bg-[#d98aaa] px-5 py-2 text-xs text-white transition active:scale-95"
+    >
+      Cuba Lagi
+    </button>
   </div>
-))}
+) : galleryItems.length === 0 ? (
+  <p className="mt-12 text-center text-sm text-[#9a817b]">
+    Belum ada gambar.
+  </p>
+) : (
+  <div className="mt-8 grid grid-cols-2 gap-3">
 
+    {galleryItems
+      .filter(
+        (photo) =>
+          galleryFilter === "all" ||
+          photo.template_id === galleryFilter
+      )
+      .map((photo) => (
+        <div
+          key={photo.id}
+          onClick={() => {
+            setSelectedGalleryPhoto({
+              ...photo,
+              stripPhotos: photo.stripPhotos ?? [photo],
+            });
+            setScreen("gallery-detail");
+          }}
+          className="cursor-pointer overflow-visible bg-transparent p-0 transition active:scale-[0.98]"
+        >
+          <img
+            src={photo.image_url}
+            alt={`Gallery photo ${photo.id}`}
+            loading="lazy"
+            className="h-auto w-full object-contain"
+            draggable={false}
+          />
+
+          <div className="mt-1 flex items-center justify-between bg-white px-2 py-1">
+            <div className="flex flex-col text-[9px] leading-tight text-[#8d7770]">
+              <span>
+                {new Date(photo.created_at).toLocaleTimeString("en-MY", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+
+              <span>
+                {new Date(photo.created_at).toLocaleDateString("en-MY", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </span>
             </div>
-          )}
 
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                likePhoto(photo.id, photo.likes);
+              }}
+              className={`rounded-full px-2.5 py-1 text-[10px] transition active:scale-90 ${
+                likedPhotoIds.includes(photo.id)
+                  ? "bg-pink-400 text-white"
+                  : "bg-pink-200 text-black"
+              }`}
+            >
+              {likedPhotoIds.includes(photo.id) ? "♥" : "♡"}{" "}
+              {photo.likes}
+            </button>
+          </div>
+        </div>
+      ))}
+  </div>
+)}
         </section>
       </div>
     </main>
