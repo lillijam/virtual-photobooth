@@ -906,10 +906,11 @@ async function loadGalleryFromSupabase(): Promise<GalleryItem[]> {
     )
     .order("created_at", { ascending: false });
 
-  if (error) {
-    console.error("Gallery loading failed:", error);
-    return [];
-  }
+if (error) {
+  console.error("Gallery loading failed:", error);
+  alert(`Gallery gagal dimuatkan: ${error.message}`);
+  return [];
+}
 
   const rows = data ?? [];
 
