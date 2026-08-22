@@ -840,7 +840,7 @@ async function uploadPhotosToSupabase() {
     const canvas = await html2canvas(element, {
       useCORS: true,
       backgroundColor: null,
-      scale: 2,
+      scale: 4,
     });
 
     const blob = await new Promise<Blob | null>((resolve) =>
@@ -1530,13 +1530,26 @@ if (!uploadedUrls) {
   const element = document.getElementById("final-frame-content");
 
   if (element) {
-    const canvas = await html2canvas(element, {
-      useCORS: true,
-      backgroundColor: null,
-      scale: 2,
-    });
+const canvas = await html2canvas(element, {
+  useCORS: true,
+  backgroundColor: null,
+  scale: 4,
+});
 
-    setFinalFrameImage(canvas.toDataURL("image/png"));
+const dataUrl = canvas.toDataURL("image/png");
+
+setFinalFrameImage(dataUrl);
+
+const response = await fetch(dataUrl);
+const blob = await response.blob();
+
+shareFileCache.current["final-frame"] = new File(
+  [blob],
+  "memoria-photo.png",
+  {
+    type: "image/png",
+  }
+);
   }
 
   setGalleryPhotos((current) => [
