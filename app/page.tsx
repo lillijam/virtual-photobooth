@@ -266,6 +266,7 @@ function handlePointerUp(
     <div
       ref={containerRef}
       className="relative h-full w-full overflow-hidden touch-none"
+      style={{ touchAction: "none" }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
