@@ -1008,10 +1008,8 @@ async function downloadPhoto() {
   }
 }
 
-async function shareGalleryPhoto() {
-  const element = document.getElementById(
-    "gallery-detail-photo"
-  );
+async function sharePhoto(elementId: string) {
+  const element = document.getElementById(elementId);
 
   if (!element) return;
 
@@ -1484,6 +1482,18 @@ if (screen === "strip") {
           >
             Home
           </button>
+          
+          <button
+  type="button"
+  onClick={() => sharePhoto("final-frame")}
+  className="absolute right-6 top-8 z-20 transition active:scale-90"
+>
+  <img
+    src="/icons/Share.svg"
+    alt="Share"
+    className="h-8 w-8"
+  />
+</button>
 
           <h1 className="mt-8 text-3xl font-bold text-[#d96f9b]">
             Your Strip!
@@ -1530,18 +1540,6 @@ if (screen === "strip") {
   <img
     src="/icons/Lihat%20Galeri.svg"
     alt="Lihat Galeri"
-    className="w-40"
-  />
-</button>
-
-<button
-  type="button"
-  onClick={downloadPhoto}
-  className="mt-6 transition active:scale-95"
->
-  <img
-    src="/icons/Muat%20Turun.svg"
-    alt="Muat Turun"
     className="w-40"
   />
 </button>
@@ -1740,13 +1738,17 @@ if (screen === "gallery-detail" && selectedGalleryPhoto) {
               />
             </button>
 
-            <button
-              type="button"
-              onClick={shareGalleryPhoto}
-              className="text-xs font-medium tracking-wide text-[#6f6250]"
-            >
-              SHARE
-            </button>
+<button
+  type="button"
+  onClick={() => sharePhoto("gallery-detail-photo")}
+  className="transition active:scale-90"
+>
+  <img
+    src="/icons/Share.svg"
+    alt="Share"
+    className="h-8 w-8"
+  />
+</button>
           </div>
 
           {/* PHOTO */}
