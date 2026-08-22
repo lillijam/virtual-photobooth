@@ -5,7 +5,7 @@ import { supabase } from "../utils/supabase";
 import html2canvas from "html2canvas-pro";
 
 
-type Screen = "home" | "guest" | "template" | "camera" | "preview" | "strip" | "gallery";
+type Screen = "home" | "guest" | "template" | "camera" | "preview" | "strip" | "gallery" | "gallery-detail";
 function AdjustablePhoto({
   photo,
   isUploaded = false,
@@ -470,19 +470,28 @@ const [photos, setPhotos] = useState<string[]>([]);
 const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
 const [uploadedPhotoIndexes, setUploadedPhotoIndexes] = useState<number[]>([]);
 
-  type GalleryItem = {
+type GalleryItem = {
   id: number;
   image_url: string;
   guest_name: string | null;
   likes: number;
   template_id: string | null;
+  strip_id: string | null;
   created_at: string;
+  stripPhotos?: GalleryItem[];
+};
+
+type GalleryDetail = GalleryItem & {
+  stripPhotos: GalleryItem[];
 };
 
 const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
 const [visitorId, setVisitorId] = useState("");
 const [likedPhotoIds, setLikedPhotoIds] = useState<number[]>([]);
 const [galleryFilter, setGalleryFilter] = useState("all");
+
+const [selectedGalleryPhoto, setSelectedGalleryPhoto] =
+  useState<GalleryDetail | null>(null);
 
 useEffect(() => {
   let id = localStorage.getItem("memoria-visitor-id");
@@ -748,6 +757,7 @@ function toggleCamera() {
 
 async function uploadPhotosToSupabase() {
   const uploadedUrls: string[] = [];
+  const stripId = crypto.randomUUID();
 
   for (let i = 0; i < photos.length; i++) {
     const photo = photos[i];
@@ -783,6 +793,7 @@ const galleryRows = uploadedUrls.map((url) => ({
   guest_name: guestName,
   likes: 0,
   template_id: selectedTemplate,
+  strip_id: stripId,
 }));
 
     const { error: databaseError } = await supabase
@@ -801,7 +812,9 @@ const galleryRows = uploadedUrls.map((url) => ({
 async function loadGalleryFromSupabase(): Promise<GalleryItem[]> {
   const { data, error } = await supabase
     .from("gallery_photos")
-    .select("id, image_url, guest_name, likes, template_id, created_at")
+    .select(
+      "id, image_url, guest_name, likes, template_id, strip_id, created_at"
+    )
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -809,7 +822,37 @@ async function loadGalleryFromSupabase(): Promise<GalleryItem[]> {
     return [];
   }
 
-  return data ?? [];
+  const rows = data ?? [];
+
+  const grouped = new Map<string, GalleryItem>();
+
+  for (const item of rows) {
+    // Gambar lama yang tiada strip_id
+    // kekal sebagai gambar individu
+    if (!item.strip_id) {
+      grouped.set(`photo-${item.id}`, {
+        ...item,
+        stripPhotos: [item],
+      });
+      continue;
+    }
+
+    const existing = grouped.get(`strip-${item.strip_id}`);
+
+    if (existing) {
+      existing.stripPhotos = [
+        ...(existing.stripPhotos ?? []),
+        item,
+      ];
+    } else {
+      grouped.set(`strip-${item.strip_id}`, {
+        ...item,
+        stripPhotos: [item],
+      });
+    }
+  }
+
+  return Array.from(grouped.values());
 }
 
 async function likePhoto(photoId: number, currentLikes: number) {
@@ -864,6 +907,12 @@ async function likePhoto(photoId: number, currentLikes: number) {
       )
     );
 
+    setSelectedGalleryPhoto((current) =>
+  current && current.id === photoId
+    ? { ...current, likes: newLikes }
+    : current
+);
+
     return;
   }
 
@@ -901,6 +950,13 @@ async function likePhoto(photoId: number, currentLikes: number) {
         : photo
     )
   );
+
+  setSelectedGalleryPhoto((current) =>
+  current && current.id === photoId
+    ? { ...current, likes: newLikes }
+    : current
+);
+
 }
 
 async function downloadPhoto() {
@@ -921,6 +977,59 @@ async function downloadPhoto() {
     link.click();
   } catch (error) {
     console.error("Download failed:", error);
+  }
+}
+
+async function shareGalleryPhoto() {
+  const element = document.getElementById(
+    "gallery-detail-photo"
+  );
+
+  if (!element) return;
+
+  try {
+    const canvas = await html2canvas(element, {
+      useCORS: true,
+      backgroundColor: null,
+      scale: 2,
+    });
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/png")
+    );
+
+    if (!blob) return;
+
+    const file = new File(
+      [blob],
+      "memoria-photo.png",
+      {
+        type: "image/png",
+      }
+    );
+
+    if (
+      navigator.share &&
+      navigator.canShare &&
+      navigator.canShare({ files: [file] })
+    ) {
+      await navigator.share({
+        title: "Memoria",
+        text: "A moment by Memoria",
+        files: [file],
+      });
+    } else if (navigator.share) {
+      await navigator.share({
+        title: "Memoria",
+        text: "A moment by Memoria",
+      });
+    } else {
+      alert(
+        "Fungsi share tidak disokong oleh browser ini."
+      );
+    }
+  } catch (error) {
+    console.error("Share failed:", error);
   }
 }
 
@@ -1297,13 +1406,27 @@ useEffect(() => {
 
 <button
   type="button"
-  onClick={() => galleryInputRef.current?.click()}
-className="mt-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/80 shadow-md transition active:scale-90"
+  onClick={async () => {
+    const uploadedUrls = await uploadPhotosToSupabase();
+
+    if (!uploadedUrls) {
+      alert("Gambar gagal disimpan. Sila cuba lagi.");
+      return;
+    }
+
+    setGalleryPhotos((current) => [
+      ...current,
+      ...uploadedUrls,
+    ]);
+
+    setScreen("strip");
+  }}
+  className="mt-6 transition active:scale-95"
 >
   <img
-    src="/icons/Upload.svg"
+    src="/icons/Gunakan%20Gambar.svg"
     alt="Gunakan gambar"
-    className="h-8 w-8"
+    className="w-40"
   />
 </button>
 
@@ -1362,23 +1485,27 @@ if (screen === "strip") {
             berjaya disimpan ke galeri.
           </p>
 
-          <button
-            type="button"
-            onClick={() => setScreen("gallery")}
-            className="mt-6 rounded-full bg-[#df9aaa] px-8 py-3 text-sm font-medium text-white shadow-md"
-          >
-            Lihat Galeri
-          </button>
+<button
+  type="button"
+  onClick={() => setScreen("gallery")}
+  className="mt-6 transition active:scale-95"
+>
+  <img
+    src="/icons/Lihat%20Galeri.svg"
+    alt="Lihat Galeri"
+    className="w-40"
+  />
+</button>
 
 <button
   type="button"
   onClick={downloadPhoto}
-  className="mt-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/80 shadow-md transition active:scale-90"
+  className="mt-6 transition active:scale-95"
 >
   <img
-    src="/icons/Download.svg"
-    alt="Muat turun"
-    className="h-8 w-8"
+    src="/icons/Muat%20Turun.svg"
+    alt="Muat Turun"
+    className="w-40"
   />
 </button>
 
@@ -1456,18 +1583,37 @@ if (screen === "gallery") {
   .map((photo) => (
 <div
   key={photo.id}
-  className="overflow-visible bg-transparent p-0"
+onClick={() => {
+setSelectedGalleryPhoto({
+  ...photo,
+  stripPhotos: photo.stripPhotos ?? [photo],
+});
+  setScreen("gallery-detail");
+}}
+  className="cursor-pointer overflow-visible bg-transparent p-0 transition active:scale-[0.98]"
 >
 {photo.template_id === "polaroid" && (
   <PolaroidFrame photo={photo.image_url} />
 )}
 
 {photo.template_id === "4r" && (
-  <FourRFrame photos={[photo.image_url]} />
+  <FourRFrame
+    photos={
+      photo.stripPhotos?.map(
+        (item) => item.image_url
+      ) ?? [photo.image_url]
+    }
+  />
 )}
 
 {photo.template_id === "2r" && (
-  <TwoRFrame photos={[photo.image_url]} />
+  <TwoRFrame
+    photos={
+      photo.stripPhotos?.map(
+        (item) => item.image_url
+      ) ?? [photo.image_url]
+    }
+  />
 )}
 
 {!photo.template_id && (
@@ -1498,7 +1644,10 @@ if (screen === "gallery") {
 
   <button
     type="button"
-    onClick={() => likePhoto(photo.id, photo.likes)}
+    onClick={(e) => {
+  e.stopPropagation();
+  likePhoto(photo.id, photo.likes);
+}}
     className={`rounded-full px-2.5 py-1 text-[10px] transition active:scale-90 ${
       likedPhotoIds.includes(photo.id)
         ? "bg-pink-400 text-white"
@@ -1513,6 +1662,182 @@ if (screen === "gallery") {
 
             </div>
           )}
+
+        </section>
+      </div>
+    </main>
+  );
+}
+
+// GALLERY DETAIL
+if (screen === "gallery-detail" && selectedGalleryPhoto) {
+  const photo = selectedGalleryPhoto;
+
+  return (
+    <main className="min-h-screen bg-[#f7cfd1] flex justify-center">
+      <div
+        className="relative min-h-screen w-full max-w-md overflow-hidden"
+        style={{
+          background:
+            "repeating-linear-gradient(90deg, #f7cfd1 0px, #f7cfd1 18px, #fff1f1 18px, #fff1f1 24px, #f7cfd1 24px, #f7cfd1 38px)",
+        }}
+      >
+        <section className="relative z-10 min-h-screen px-6 py-10">
+
+          {/* TOP BAR */}
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setScreen("gallery")}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#8d7770] bg-white/70 shadow-sm transition active:scale-90"
+            >
+              <img
+                src="/icons/Back.svg"
+                alt="Kembali"
+                className="h-5 w-5"
+              />
+            </button>
+
+            <button
+              type="button"
+              onClick={shareGalleryPhoto}
+              className="text-xs font-medium tracking-wide text-[#6f6250]"
+            >
+              SHARE
+            </button>
+          </div>
+
+          {/* PHOTO */}
+          <div
+            id="gallery-detail-photo"
+            className="mt-8 overflow-hidden rounded-2xl bg-white/60 p-4 shadow-md"
+          >
+            {photo.template_id === "polaroid" && (
+              <PolaroidFrame photo={photo.image_url} />
+            )}
+
+{photo.template_id === "4r" && (
+  <FourRFrame
+    photos={
+      photo.stripPhotos?.map(
+        (item) => item.image_url
+      ) ?? [photo.image_url]
+    }
+  />
+)}
+
+{photo.template_id === "2r" && (
+  <TwoRFrame
+    photos={
+      photo.stripPhotos?.map(
+        (item) => item.image_url
+      ) ?? [photo.image_url]
+    }
+  />
+)}
+
+            {!photo.template_id && (
+              <img
+                src={photo.image_url}
+                alt="Gallery photo"
+                className="w-full rounded-lg object-cover"
+              />
+            )}
+          </div>
+
+          {/* INFO */}
+          <div className="mt-4 flex items-start justify-between">
+            <div className="text-left text-xs leading-relaxed text-[#8d7770]">
+              <p>
+                {new Date(photo.created_at).toLocaleTimeString(
+                  "en-MY",
+                  {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }
+                )}
+                {" · "}
+                {new Date(photo.created_at).toLocaleDateString(
+                  "en-MY",
+                  {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  }
+                )}
+              </p>
+
+              <p className="mt-1">
+                A moment by {photo.guest_name ?? "Guest"}
+              </p>
+            </div>
+
+            {/* LIKE */}
+            <button
+              type="button"
+              onClick={() =>
+                likePhoto(photo.id, photo.likes)
+              }
+              className={`rounded-full px-3 py-2 text-xs shadow-sm transition active:scale-90 ${
+                likedPhotoIds.includes(photo.id)
+                  ? "bg-pink-400 text-white"
+                  : "bg-white text-[#8d7770]"
+              }`}
+            >
+              {likedPhotoIds.includes(photo.id)
+                ? "♥"
+                : "♡"}{" "}
+              {photo.likes}
+            </button>
+          </div>
+
+          {/* DOWNLOAD */}
+          <button
+            type="button"
+            onClick={async () => {
+              const element =
+                document.getElementById(
+                  "gallery-detail-photo"
+                );
+
+              if (!element) return;
+
+              try {
+                const canvas = await html2canvas(
+                  element,
+                  {
+                    useCORS: true,
+                    backgroundColor: null,
+                    scale: 2,
+                  }
+                );
+
+                const link =
+                  document.createElement("a");
+
+                link.download =
+                  `${photo.template_id ?? "photo"}-gallery.png`;
+
+                link.href =
+                  canvas.toDataURL("image/png");
+
+                link.click();
+              } catch (error) {
+                console.error(
+                  "Download failed:",
+                  error
+                );
+              }
+            }}
+            className="mx-auto mt-8 flex items-center justify-center gap-2 rounded-full bg-white px-8 py-3 text-xs font-medium text-[#6f6250] shadow-md transition active:scale-95"
+          >
+            <img
+              src="/icons/Download.svg"
+              alt=""
+              className="h-5 w-5"
+            />
+            MUAT TURUN
+          </button>
 
         </section>
       </div>
