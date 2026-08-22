@@ -9,9 +9,11 @@ type Screen = "home" | "guest" | "template" | "camera" | "preview" | "strip" | "
 function AdjustablePhoto({
   photo,
   isUploaded = false,
+  interactive = true,
 }: {
   photo: string;
   isUploaded?: boolean;
+  interactive?: boolean;
 }) {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
@@ -263,16 +265,20 @@ function handlePointerUp(
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="relative h-full w-full overflow-hidden touch-none"
-      style={{ touchAction: "none" }}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
-      onWheel={handleWheel}
-    >
+<div
+  ref={containerRef}
+  className={`relative h-full w-full overflow-hidden ${
+    interactive ? "touch-none" : ""
+  }`}
+  style={{
+    touchAction: interactive ? "none" : "auto",
+  }}
+  onPointerDown={interactive ? handlePointerDown : undefined}
+  onPointerMove={interactive ? handlePointerMove : undefined}
+  onPointerUp={interactive ? handlePointerUp : undefined}
+  onPointerCancel={interactive ? handlePointerUp : undefined}
+  onWheel={interactive ? handleWheel : undefined}
+>
       <img
         src={photo}
         alt="Photo"
@@ -324,9 +330,11 @@ function handlePointerUp(
 function PolaroidFrame({
   photo,
   isUploaded = false,
+  interactive = true,
 }: {
   photo: string;
   isUploaded?: boolean;
+  interactive?: boolean;
 }) {
   return (
     <div className="relative mx-auto aspect-[1080/1440] w-full max-w-sm overflow-hidden bg-[#eee5df]">
@@ -342,6 +350,7 @@ function PolaroidFrame({
 <AdjustablePhoto
   photo={photo}
   isUploaded={isUploaded}
+  interactive={interactive}
 />
       </div>
 
@@ -358,9 +367,11 @@ function PolaroidFrame({
 function FourRFrame({
   photos,
   uploadedPhotoIndexes = [],
+  interactive = true,
 }: {
   photos: string[];
   uploadedPhotoIndexes?: number[];
+  interactive?: boolean;
 }) {
   return (
     <div className="relative mx-auto aspect-[1200/1800] w-full max-w-sm overflow-hidden bg-[#eee5df]">
@@ -374,9 +385,10 @@ function FourRFrame({
           height: "36.1%",
         }}
       >
-  <AdjustablePhoto
+<AdjustablePhoto
   photo={photos[0]}
   isUploaded={uploadedPhotoIndexes.includes(0)}
+  interactive={interactive}
 />
       </div>
 
@@ -390,9 +402,10 @@ function FourRFrame({
           height: "36.1%",
         }}
       >
-        <AdjustablePhoto
+<AdjustablePhoto
   photo={photos[1]}
   isUploaded={uploadedPhotoIndexes.includes(1)}
+  interactive={interactive}
 />
       </div>
 
@@ -406,7 +419,13 @@ function FourRFrame({
     </div>
   );
 }
-function TwoRFrame({ photos }: { photos: string[] }) {
+function TwoRFrame({
+  photos,
+  interactive = true,
+}: {
+  photos: string[];
+  interactive?: boolean;
+}) {
   return (
     <div className="relative mx-auto aspect-[750/1350] w-full max-w-sm overflow-hidden bg-[#eee5df]">
       {/* Photo 1 */}
@@ -419,7 +438,10 @@ function TwoRFrame({ photos }: { photos: string[] }) {
           height: "26.67%",
         }}
       >
-        {photos[0] && <AdjustablePhoto photo={photos[0]} />}
+<AdjustablePhoto
+  photo={photos[0]}
+  interactive={interactive}
+/>
       </div>
 
       {/* Photo 2 */}
@@ -432,7 +454,10 @@ function TwoRFrame({ photos }: { photos: string[] }) {
           height: "26.67%",
         }}
       >
-        {photos[1] && <AdjustablePhoto photo={photos[1]} />}
+<AdjustablePhoto
+  photo={photos[1]}
+  interactive={interactive}
+/>
       </div>
 
       {/* Photo 3 */}
@@ -445,7 +470,10 @@ function TwoRFrame({ photos }: { photos: string[] }) {
           height: "26.67%",
         }}
       >
-        {photos[2] && <AdjustablePhoto photo={photos[2]} />}
+<AdjustablePhoto
+  photo={photos[2]}
+  interactive={interactive}
+/>
       </div>
 
       {/* 2R overlay */}
@@ -1463,15 +1491,24 @@ if (screen === "strip") {
 
           <div className="mt-8 w-full max-w-xs">
             {selectedTemplate === "polaroid" && photos[0] && (
-              <PolaroidFrame photo={photos[0]} />
+<PolaroidFrame
+  photo={photos[0]}
+  interactive={false}
+/>
             )}
 
             {selectedTemplate === "4r" && photos.length >= 2 && (
-              <FourRFrame photos={photos} />
+<FourRFrame
+  photos={photos}
+  interactive={false}
+/>
             )}
 
             {selectedTemplate === "2r" && photos.length >= 3 && (
-              <TwoRFrame photos={photos} />
+<TwoRFrame
+  photos={photos}
+  interactive={false}
+/>
             )}
           </div>
 
@@ -1593,7 +1630,10 @@ setSelectedGalleryPhoto({
   className="cursor-pointer overflow-visible bg-transparent p-0 transition active:scale-[0.98]"
 >
 {photo.template_id === "polaroid" && (
-  <PolaroidFrame photo={photo.image_url} />
+  <PolaroidFrame
+    photo={photo.image_url}
+    interactive={false}
+  />
 )}
 
 {photo.template_id === "4r" && (
@@ -1603,6 +1643,7 @@ setSelectedGalleryPhoto({
         (item) => item.image_url
       ) ?? [photo.image_url]
     }
+    interactive={false}
   />
 )}
 
@@ -1613,6 +1654,7 @@ setSelectedGalleryPhoto({
         (item) => item.image_url
       ) ?? [photo.image_url]
     }
+    interactive={false}
   />
 )}
 
@@ -1708,32 +1750,37 @@ if (screen === "gallery-detail" && selectedGalleryPhoto) {
           </div>
 
           {/* PHOTO */}
-          <div
-            id="gallery-detail-photo"
-            className="mt-8 overflow-hidden rounded-2xl bg-white/60 p-4 shadow-md"
-          >
+<div
+  id="gallery-detail-photo"
+  className="mt-8 overflow-hidden bg-transparent p-0 shadow-md"
+>
             {photo.template_id === "polaroid" && (
-              <PolaroidFrame photo={photo.image_url} />
+              <PolaroidFrame
+  photo={photo.image_url}
+  interactive={false}
+/>
             )}
 
 {photo.template_id === "4r" && (
-  <FourRFrame
-    photos={
-      photo.stripPhotos?.map(
-        (item) => item.image_url
-      ) ?? [photo.image_url]
-    }
-  />
+<FourRFrame
+  photos={
+    photo.stripPhotos?.map(
+      (item) => item.image_url
+    ) ?? [photo.image_url]
+  }
+  interactive={false}
+/>
 )}
 
 {photo.template_id === "2r" && (
-  <TwoRFrame
-    photos={
-      photo.stripPhotos?.map(
-        (item) => item.image_url
-      ) ?? [photo.image_url]
-    }
-  />
+<TwoRFrame
+  photos={
+    photo.stripPhotos?.map(
+      (item) => item.image_url
+    ) ?? [photo.image_url]
+  }
+  interactive={false}
+/>
 )}
 
             {!photo.template_id && (
@@ -1790,55 +1837,6 @@ if (screen === "gallery-detail" && selectedGalleryPhoto) {
               {photo.likes}
             </button>
           </div>
-
-          {/* DOWNLOAD */}
-          <button
-            type="button"
-            onClick={async () => {
-              const element =
-                document.getElementById(
-                  "gallery-detail-photo"
-                );
-
-              if (!element) return;
-
-              try {
-                const canvas = await html2canvas(
-                  element,
-                  {
-                    useCORS: true,
-                    backgroundColor: null,
-                    scale: 2,
-                  }
-                );
-
-                const link =
-                  document.createElement("a");
-
-                link.download =
-                  `${photo.template_id ?? "photo"}-gallery.png`;
-
-                link.href =
-                  canvas.toDataURL("image/png");
-
-                link.click();
-              } catch (error) {
-                console.error(
-                  "Download failed:",
-                  error
-                );
-              }
-            }}
-            className="mx-auto mt-8 flex items-center justify-center gap-2 rounded-full bg-white px-8 py-3 text-xs font-medium text-[#6f6250] shadow-md transition active:scale-95"
-          >
-            <img
-              src="/icons/Download.svg"
-              alt=""
-              className="h-5 w-5"
-            />
-            MUAT TURUN
-          </button>
-
         </section>
       </div>
     </main>
