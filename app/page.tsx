@@ -516,6 +516,8 @@ type GalleryDetail = GalleryItem & {
 const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
 const [visitorId, setVisitorId] = useState("");
 const [likedPhotoIds, setLikedPhotoIds] = useState<number[]>([]);
+
+const shareFileCache = useRef<Record<string, File | null>>({});
 const [galleryFilter, setGalleryFilter] = useState("all");
 
 const [selectedGalleryPhoto, setSelectedGalleryPhoto] =
@@ -1008,7 +1010,7 @@ async function downloadPhoto() {
   }
 }
 
-async function sharePhoto(elementId: string) {
+async function prepareSharePhoto(elementId: string) {
   const element = document.getElementById(elementId);
 
   if (!element) return;
@@ -1026,14 +1028,27 @@ async function sharePhoto(elementId: string) {
 
     if (!blob) return;
 
-    const file = new File(
+    shareFileCache.current[elementId] = new File(
       [blob],
       "memoria-photo.png",
       {
         type: "image/png",
       }
     );
+  } catch (error) {
+    console.error("Prepare share image failed:", error);
+  }
+}
 
+async function sharePhoto(elementId: string) {
+  const file = shareFileCache.current[elementId];
+
+  if (!file) {
+    alert("Gambar sedang disediakan. Cuba tekan Share sekali lagi.");
+    return;
+  }
+
+  try {
     if (
       navigator.share &&
       navigator.canShare &&
@@ -1044,22 +1059,43 @@ async function sharePhoto(elementId: string) {
         text: "A moment by Memoria",
         files: [file],
       });
-    } else if (navigator.share) {
+
+      return;
+    }
+
+    if (navigator.share) {
       await navigator.share({
         title: "Memoria",
         text: "A moment by Memoria",
       });
-    } else {
-      alert(
-        "Fungsi share tidak disokong oleh browser ini."
-      );
+
+      return;
     }
+
+    alert("Fungsi share tidak disokong oleh browser ini.");
   } catch (error) {
-    console.error("Share failed:", error);
+    console.log("Share cancelled:", error);
   }
 }
 
   function takePhoto() {
+    useEffect(() => {
+  if (screen === "strip") {
+    const timer = setTimeout(() => {
+      prepareSharePhoto("final-frame");
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }
+
+  if (screen === "gallery-detail") {
+    const timer = setTimeout(() => {
+      prepareSharePhoto("gallery-detail-photo");
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }
+}, [screen, selectedGalleryPhoto]);
     if (!videoRef.current || countdown !== null) return;
 
     if (timer === 0) {
@@ -1499,7 +1535,10 @@ if (screen === "strip") {
             Your Strip!
           </h1>
 
-          <div className="mt-8 w-full max-w-xs">
+          <div
+  id="final-frame"
+  className="mt-8 w-full max-w-xs"
+>
             {selectedTemplate === "polaroid" && photos[0] && (
 <PolaroidFrame
   photo={photos[0]}
