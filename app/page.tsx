@@ -850,16 +850,25 @@ async function uploadPhotosToSupabase() {
       scale: 4,
     });
 
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/png")
-    );
+const pngBlob = await new Promise<Blob | null>((resolve) =>
+  canvas.toBlob(resolve, "image/png")
+);
 
-    if (!blob) {
-      console.error("Failed to create image blob");
-      return null;
-    }
+if (!pngBlob) {
+  console.error("Failed to create PNG blob");
+  return null;
+}
 
-    const finalDataUrl = await new Promise<string>((resolve, reject) => {
+const compressedBlob = await new Promise<Blob | null>((resolve) =>
+  canvas.toBlob(resolve, "image/webp", 0.88)
+);
+
+if (!compressedBlob) {
+  console.error("Failed to create WebP blob");
+  return null;
+}
+
+const finalDataUrl = await new Promise<string>((resolve, reject) => {
   const reader = new FileReader();
 
   reader.onloadend = () => {
@@ -868,20 +877,20 @@ async function uploadPhotosToSupabase() {
 
   reader.onerror = reject;
 
-  reader.readAsDataURL(blob);
+  reader.readAsDataURL(pngBlob);
 });
 
 setFinalImage(finalDataUrl);
 
-const fileName = `photo-${Date.now()}.png`;
+const fileName = `photo-${Date.now()}.webp`;
 
     // Upload SATU gambar sahaja
-    const { error } = await supabase.storage
-      .from("memoria-gallery")
-      .upload(fileName, blob, {
-        contentType: "image/png",
-        upsert: false,
-      });
+const { error } = await supabase.storage
+  .from("memoria-gallery")
+  .upload(fileName, compressedBlob, {
+    contentType: "image/webp",
+    upsert: false,
+  });
 
     if (error) {
       console.error("Upload failed:", error);
@@ -915,7 +924,7 @@ const fileName = `photo-${Date.now()}.png`;
    return {
   uploadedUrl,
   finalDataUrl,
-  blob,
+  blob: pngBlob,
 };
   } catch (error) {
     console.error("Upload failed:", error);
