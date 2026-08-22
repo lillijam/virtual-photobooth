@@ -341,6 +341,7 @@ useEffect(() => {
   const [cameraFacing, setCameraFacing] = useState<"user" | "environment">("user");
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const templates = [
 {
@@ -423,11 +424,51 @@ useEffect(() => {
 
 const requiredPhotos = selectedTemplateData?.photoCount ?? 3;
 
+function handleGalleryUpload(
+  event: React.ChangeEvent<HTMLInputElement>
+) {
+  const file = event.target.files?.[0];
+
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    const imageUrl = reader.result as string;
+
+    setPhotos((current) => [...current, imageUrl]);
+  };
+
+  reader.readAsDataURL(file);
+
+  event.target.value = "";
+}
+
   // Start camera when entering camera screen
   useEffect(() => {
     if (screen !== "camera") return;
 
     let mounted = true;
+
+function handleGalleryUpload(
+  event: React.ChangeEvent<HTMLInputElement>
+) {
+  const file = event.target.files?.[0];
+
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    const imageUrl = reader.result as string;
+
+    setPhotos((current) => [...current, imageUrl]);
+  };
+
+  reader.readAsDataURL(file);
+
+  event.target.value = "";
+}
 
     async function startCamera() {
       try {
@@ -914,6 +955,7 @@ useEffect(() => {
   />
 </div>
 
+
                       <div>
                         <h2 className="font-serif text-xl italic text-[#8d7770]">
                           {template.name}
@@ -1007,33 +1049,31 @@ useEffect(() => {
               Drag &amp; pinch to adjust the photo
             </p>
 
-            <button
-              type="button"
-              onClick={() => {
-                setPhotos([]);
-                setScreen("camera");
-              }}
-              className="mt-6 rounded-full border border-[#9a817b] bg-white/50 px-6 py-3 text-xs text-[#6f6250]"
-            >
-              AMBIL SEMULA
-            </button>
+<button
+  type="button"
+  onClick={() => {
+    setPhotos([]);
+    setScreen("camera");
+  }}
+  className="mt-6 transition active:scale-95"
+>
+  <img
+    src="/icons/Ambil%20Semula.svg"
+    alt="Ambil semula"
+    className="w-34"
+  />
+</button>
 
 <button
   type="button"
-  onClick={async () => {
-  const uploadedUrls = await uploadPhotosToSupabase();
-
-  if (!uploadedUrls) {
-    alert("Gambar gagal disimpan. Sila cuba lagi.");
-    return;
-  }
-
-  setGalleryPhotos((current) => [...current, ...uploadedUrls]);
-  setScreen("strip");
-}}
-  className="mt-3 rounded-full bg-[#ead34f] px-6 py-3 text-xs font-medium text-[#6f6250] shadow-md"
+  onClick={() => galleryInputRef.current?.click()}
+className="mt-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/80 shadow-md transition active:scale-90"
 >
-  GUNAKAN GAMBAR
+  <img
+    src="/icons/Upload.svg"
+    alt="Gunakan gambar"
+    className="h-8 w-8"
+  />
 </button>
 
           </section>
@@ -1099,12 +1139,16 @@ if (screen === "strip") {
             Lihat Galeri
           </button>
 
-          <button
+<button
   type="button"
   onClick={downloadPhoto}
-  className="mt-3 rounded-full border border-[#9a817b] bg-white/60 px-8 py-3 text-sm font-medium text-[#6f6250] shadow-md"
+  className="mt-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/80 shadow-md transition active:scale-90"
 >
-  Download Photo
+  <img
+    src="/icons/Download.svg"
+    alt="Muat turun"
+    className="h-8 w-8"
+  />
 </button>
 
         </section>
@@ -1338,29 +1382,60 @@ style={{
             </div>
           </div>
 
-         {/* TOMBOL ROTATE CAMERA */}
-          <button
-            type="button"
-            onClick={toggleCamera}
-            className="mt-5 rounded-full border border-[#c8aaa5] bg-white/70 px-5 py-2 text-xs text-[#8d7770] shadow-sm transition active:scale-95"
-          >
-            ↻ Tukar Kamera
-          </button>
+<input
+  ref={galleryInputRef}
+  type="file"
+  accept="image/*"
+  hidden
+  onChange={handleGalleryUpload}
+/>
 
-          <button
-            type="button"
-            onClick={takePhoto}
-            disabled={countdown !== null || currentPhoto > requiredPhotos}
-            className="mt-8 flex h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-transparent shadow-md transition active:scale-90 disabled:opacity-50"
-          >
-            <span className="h-14 w-14 rounded-full border border-[#8d7770] bg-[#f7cfd1]" />
-          </button>
+{/* CAMERA CONTROLS */}
+<div className="mt-8 flex w-full items-center justify-center gap-10">
 
-          <p className="mt-4 text-xs text-[#9a817b]">
-            {countdown !== null
-              ? "Get ready..."
-              : `Tap to take photo ${currentPhoto} of 3`}
-          </p>
+  {/* ROTATE CAMERA */}
+  <button
+    type="button"
+    onClick={toggleCamera}
+    className="flex h-14 w-14 items-center justify-center rounded-full bg-white/80 shadow-md transition active:scale-90"
+  >
+    <img
+      src="/icons/Rotate%20Camera.svg"
+      alt="Tukar kamera"
+      className="h-8 w-8"
+    />
+  </button>
+
+  {/* TAKE PHOTO */}
+  <button
+    type="button"
+    onClick={takePhoto}
+    disabled={countdown !== null || currentPhoto > requiredPhotos}
+    className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-transparent shadow-md transition active:scale-90 disabled:opacity-50"
+  >
+    <span className="h-14 w-14 rounded-full border border-[#8d7770] bg-[#f7cfd1]" />
+  </button>
+
+{/* UPLOAD */}
+<button
+  type="button"
+  onClick={() => galleryInputRef.current?.click()}
+  className="flex h-14 w-14 items-center justify-center rounded-full bg-white/80 shadow-md transition active:scale-90"
+>
+  <img
+    src="/icons/Upload.svg"
+    alt="Upload gambar"
+    className="h-8 w-8"
+  />
+</button>
+
+</div>
+
+<p className="mt-4 text-xs text-[#9a817b]">
+  {countdown !== null
+    ? "Get ready..."
+    : `Tap to take photo ${currentPhoto} of 3`}
+</p>
         </section>
       </div>
     </main>
