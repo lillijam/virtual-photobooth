@@ -520,6 +520,7 @@ const [isHydrated, setIsHydrated] = useState(false);
 const [photos, setPhotos] = useState<string[]>([]);
 const [finalFrameImage, setFinalFrameImage] = useState<string | null>(null);
 const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
+const [finalImage, setFinalImage] = useState<string | null>(null);
 const [uploadedPhotoIndexes, setUploadedPhotoIndexes] = useState<number[]>([]);
 
 type GalleryItem = {
@@ -783,12 +784,18 @@ async function handleGalleryUpload(
       try {
         setCameraError("");
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-video: {
-  facingMode: cameraFacing,
-},
-          audio: false,
-        });
+const stream = await navigator.mediaDevices.getUserMedia({
+  video: {
+    facingMode: cameraFacing,
+    width: {
+      ideal: 1920,
+    },
+    height: {
+      ideal: 1080,
+    },
+  },
+  audio: false,
+});
 
         if (!mounted) {
           stream.getTracks().forEach((track) => track.stop());
@@ -852,7 +859,21 @@ async function uploadPhotosToSupabase() {
       return null;
     }
 
-    const fileName = `photo-${Date.now()}.png`;
+    const finalDataUrl = await new Promise<string>((resolve, reject) => {
+  const reader = new FileReader();
+
+  reader.onloadend = () => {
+    resolve(reader.result as string);
+  };
+
+  reader.onerror = reject;
+
+  reader.readAsDataURL(blob);
+});
+
+setFinalImage(finalDataUrl);
+
+const fileName = `photo-${Date.now()}.png`;
 
     // Upload SATU gambar sahaja
     const { error } = await supabase.storage
@@ -891,7 +912,11 @@ async function uploadPhotosToSupabase() {
       return null;
     }
 
-    return [uploadedUrl];
+   return {
+  uploadedUrl,
+  finalDataUrl,
+  blob,
+};
   } catch (error) {
     console.error("Upload failed:", error);
     return null;
@@ -1520,55 +1545,26 @@ useEffect(() => {
 <button
   type="button"
 onClick={async () => {
-const uploadedUrls = await uploadPhotosToSupabase();
+  const result = await uploadPhotosToSupabase();
 
-if (!uploadedUrls) {
-  alert("Gambar gagal disimpan. Sila cuba lagi.");
-  return;
-}
-
-  const element = document.getElementById("final-frame-content");
-
-  if (element) {
-const rect = element.getBoundingClientRect();
-
-const targetWidth =
-  selectedTemplate === "4r"
-    ? 1084
-    : selectedTemplate === "2r"
-      ? 660
-      : 1080;
-
-const scale = Math.max(
-  2,
-  targetWidth / rect.width
-);
-
-const canvas = await html2canvas(element, {
-  useCORS: true,
-  backgroundColor: null,
-  scale,
-});
-
-const dataUrl = canvas.toDataURL("image/png");
-
-setFinalFrameImage(dataUrl);
-
-const response = await fetch(dataUrl);
-const blob = await response.blob();
-
-shareFileCache.current["final-frame"] = new File(
-  [blob],
-  "memoria-photo.png",
-  {
-    type: "image/png",
+  if (!result) {
+    alert("Gambar gagal disimpan. Sila cuba lagi.");
+    return;
   }
-);
-  }
+
+  setFinalFrameImage(result.finalDataUrl);
+
+  shareFileCache.current["final-frame"] = new File(
+    [result.blob],
+    "memoria-photo.png",
+    {
+      type: "image/png",
+    }
+  );
 
   setGalleryPhotos((current) => [
     ...current,
-    ...uploadedUrls,
+    result.uploadedUrl,
   ]);
 
   setScreen("strip");
