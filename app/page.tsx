@@ -908,7 +908,6 @@ async function loadGalleryFromSupabase(): Promise<GalleryItem[]> {
 
 if (error) {
   console.error("Gallery loading failed:", error);
-  alert(`Gallery gagal dimuatkan: ${error.message}`);
   return [];
 }
 
@@ -1531,10 +1530,24 @@ if (!uploadedUrls) {
   const element = document.getElementById("final-frame-content");
 
   if (element) {
+const rect = element.getBoundingClientRect();
+
+const targetWidth =
+  selectedTemplate === "4r"
+    ? 1084
+    : selectedTemplate === "2r"
+      ? 660
+      : 1080;
+
+const scale = Math.max(
+  2,
+  targetWidth / rect.width
+);
+
 const canvas = await html2canvas(element, {
   useCORS: true,
   backgroundColor: null,
-  scale: 4,
+  scale,
 });
 
 const dataUrl = canvas.toDataURL("image/png");
