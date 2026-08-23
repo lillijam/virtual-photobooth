@@ -1470,22 +1470,31 @@ if (screen === "template") {
               "repeating-linear-gradient(90deg, #f7cfd1 0px, #f7cfd1 18px, #fff1f1 18px, #fff1f1 24px, #f7cfd1 24px, #f7cfd1 38px)",
           }}
         >
-          <section className="relative z-10 flex h-[100dvh] flex-col items-center overflow-hidden px-5 pb-4 pt-5 text-center sm:px-6 sm:py-10">
-            <button
-              type="button"
-              onClick={() => setScreen("guest")}
-              className="absolute left-6 top-8 text-xs text-[#8d7770]"
-            >
-              ← Kembali
-            </button>
+<section className="relative z-10 min-h-screen px-6 py-5 text-center">
 
-            <p className="mt-3 text-xs uppercase tracking-[0.3em] text-[#9a817b]">
-              {guestName}
-            </p>
+  <div className="flex w-full items-center justify-center">
 
-            <h1 className="mt-3 text-3xl font-serif italic text-[#8d7770]">
-              Your Frame
-            </h1>
+    <button
+      type="button"
+      onClick={() => setScreen("guest")}
+      className="absolute left-0 text-xs text-[#8d7770] transition active:scale-90"
+    >
+      ← Kembali
+    </button>
+
+    <h1 className="text-3xl font-serif italic text-[#8d7770]">
+      Your Frame
+    </h1>
+
+  </div>
+
+  <p className="mt-5 text-xs uppercase tracking-[0.3em] text-[#9a817b]">
+    {guestName}
+  </p>
+
+  <p className="mt-2 text-sm text-[#9a817b]">
+    Pilih template kegemaran anda
+  </p>
 
             <p className="mt-2 text-sm text-[#9a817b]">
               Pilih template kegemaran anda
