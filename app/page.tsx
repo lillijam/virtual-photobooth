@@ -1824,28 +1824,27 @@ if (screen === "gallery") {
   }}
 >
 <div className="relative min-h-[100dvh] w-full max-w-md overflow-visible">
-<section className="relative z-10 min-h-screen px-6 pb-10 pt-3">
+<section className="relative z-10 min-h-screen px-6 py-10">
 
-<div className="relative z-50 -mx-6 bg-[#f7cfd1]/95 px-6 pb-3 pt-3 backdrop-blur-sm">
-  <div className="relative flex items-center justify-center">
+  <button
+    type="button"
+    onClick={() => setScreen("strip")}
+    className="text-xs text-[#8d7770]"
+  >
+    ← Kembali
+  </button>
 
-    <button
-      type="button"
-      onClick={() => setScreen("strip")}
-      className="absolute left-0 text-xs text-[#8d7770] transition active:scale-90"
-    >
-      ← Kembali
-    </button>
+  <div className="mt-8 text-center">
 
     <h1 className="text-3xl font-serif italic text-[#8d7770]">
       Guest Gallery
     </h1>
 
-  </div>
+<p className="mt-2 text-sm text-[#9a817b]">
+  Semua momen, satu kenangan.
+</p>
 
-  <p className="mt-2 text-center text-sm text-[#9a817b]">
-    Semua momen, satu kenangan.
-  </p>
+{/* FILTER */}
             <div className="mt-6 flex justify-center gap-2">
   {[
     { id: "all", label: "Semua" },
@@ -1867,7 +1866,7 @@ if (screen === "gallery") {
     </button>
   ))}
 </div>
-          </div>
+</div>
 
 {isGalleryLoading ? (
   <div className="mt-16 flex flex-col items-center justify-center text-center">
