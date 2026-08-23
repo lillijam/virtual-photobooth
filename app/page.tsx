@@ -2017,7 +2017,7 @@ if (screen === "gallery-detail" && selectedGalleryPhoto) {
             "repeating-linear-gradient(90deg, #f7cfd1 0px, #f7cfd1 18px, #fff1f1 18px, #fff1f1 24px, #f7cfd1 24px, #f7cfd1 38px)",
         }}
       >
-        <section className="relative z-10 flex min-h-screen flex-col items-center px-6 py-10 text-center">
+        <section className="relative z-10 flex min-h-screen flex-col items-center px-5 pb-6 pt-6 text-center sm:px-6 sm:py-10">
           <button
             type="button"
             onClick={() => setScreen("template")}
@@ -2038,7 +2038,7 @@ if (screen === "gallery-detail" && selectedGalleryPhoto) {
             {currentPhoto} / {requiredPhotos}
           </p>
 
-          <div className="relative mt-8 w-full max-w-sm overflow-hidden rounded-2xl bg-[#5d5145] shadow-lg">
+          <div className="relative mt-5 w-full max-w-sm overflow-hidden rounded-2xl bg-[#5d5145] shadow-lg sm:mt-8">
             <video
               ref={videoRef}
               autoPlay
@@ -2070,7 +2070,7 @@ style={{
             </p>
           )}
 
-          <div className="mt-6">
+          <div className="mt-4 sm:mt-6">
             <p className="mb-3 text-xs text-[#8d7770]">
               Timer
             </p>
