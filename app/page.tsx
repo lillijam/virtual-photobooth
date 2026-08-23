@@ -554,14 +554,48 @@ const [selectedGalleryPhoto, setSelectedGalleryPhoto] =
 const [detailShareReady, setDetailShareReady] = useState(false);
 
 useEffect(() => {
-  let id = localStorage.getItem("memoria-visitor-id");
+  let mounted = true;
 
-if (!id) {
-  id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  localStorage.setItem("memoria-visitor-id", id);
+  async function initAnonymousUser() {
+    // Cuba guna session anonymous yang sedia ada
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError) {
+      console.error("Auth session failed:", sessionError);
+    }
+
+if (session?.user) {
+  console.log("Existing anonymous user:", session.user.id);
+
+  if (mounted) {
+    setVisitorId(session.user.id);
+  }
+
+  return;
 }
 
-  setVisitorId(id);
+    // Tiada session → cipta anonymous user baru
+    const { data, error } = await supabase.auth.signInAnonymously();
+
+    if (error) {
+      console.error("Anonymous sign-in failed:", error);
+      return;
+    }
+
+if (mounted && data.user) {
+  console.log("Anonymous user created:", data.user.id);
+  setVisitorId(data.user.id);
+}
+  }
+
+  initAnonymousUser();
+
+  return () => {
+    mounted = false;
+  };
 }, []);
 
 useEffect(() => {
@@ -1003,7 +1037,6 @@ for (const item of grouped.values()) {
   return Array.from(grouped.values());
 }
 
-
 async function likePhoto(photoId: number, currentLikes: number) {
   if (!visitorId) return;
 
@@ -1020,92 +1053,48 @@ async function likePhoto(photoId: number, currentLikes: number) {
     return;
   }
 
-  // Kalau sudah like → UNLIKE
-  if (existingLike) {
-    const { error: deleteError } = await supabase
-      .from("gallery_likes")
-      .delete()
-      .eq("id", existingLike.id);
+  const wasLiked = !!existingLike;
 
-    if (deleteError) {
-      console.error("Unlike failed:", deleteError);
-      return;
+  // Database function akan:
+  // LIKE / UNLIKE
+  // kira jumlah Like sebenar
+  // update gallery_photos.likes
+  const { data: newLikes, error: toggleError } = await supabase.rpc(
+    "toggle_gallery_like",
+    {
+      p_photo_id: photoId,
     }
+  );
 
-    const newLikes = Math.max(currentLikes - 1, 0);
-    
-    setLikedPhotoIds((current) =>
-  current.filter((id) => id !== photoId)
-);
-
-    const { error: updateError } = await supabase
-      .from("gallery_photos")
-      .update({ likes: newLikes })
-      .eq("id", photoId);
-
-    if (updateError) {
-      console.error("Like count update failed:", updateError);
-      return;
-    }
-
-    setGalleryItems((current) =>
-      current.map((photo) =>
-        photo.id === photoId
-          ? { ...photo, likes: newLikes }
-          : photo
-      )
-    );
-
-    setSelectedGalleryPhoto((current) =>
-  current && current.id === photoId
-    ? { ...current, likes: newLikes }
-    : current
-);
-
+  if (toggleError) {
+    console.error("Like toggle failed:", toggleError);
     return;
   }
 
-  // Kalau belum like → LIKE
-  const { error: insertError } = await supabase
-    .from("gallery_likes")
-    .insert({
-      photo_id: photoId,
-      visitor_id: visitorId,
-    });
+  const totalLikes = Number(newLikes ?? 0);
 
-  if (insertError) {
-    console.error("Like failed:", insertError);
-    return;
-  }
+  // Update status Like visitor ini
+  setLikedPhotoIds((current) =>
+    wasLiked
+      ? current.filter((id) => id !== photoId)
+      : [...current, photoId]
+  );
 
-  const newLikes = currentLikes + 1;
-
-  setLikedPhotoIds((current) => [...current, photoId]);
-
-  const { error: updateError } = await supabase
-    .from("gallery_photos")
-    .update({ likes: newLikes })
-    .eq("id", photoId);
-
-  if (updateError) {
-    console.error("Like count update failed:", updateError);
-    return;
-  }
-
+  // Update jumlah Like di Gallery
   setGalleryItems((current) =>
     current.map((photo) =>
       photo.id === photoId
-        ? { ...photo, likes: newLikes }
+        ? { ...photo, likes: totalLikes }
         : photo
     )
   );
 
+  // Update jumlah Like di Gallery Detail
   setSelectedGalleryPhoto((current) =>
-  current && current.id === photoId
-    ? { ...current, likes: newLikes }
-    : current
-);
-
+    current && current.id === photoId
+      ? { ...current, likes: totalLikes }
+      : current
+  );
 }
 
 async function downloadPhoto() {
@@ -1574,42 +1563,42 @@ useEffect(() => {
 <button
   type="button"
   disabled={isSavingPhoto}
-  onClick={async () => {
-    if (isSavingPhoto) return;
+onClick={async () => {
+  if (isSavingPhoto) return;
 
-    setIsSavingPhoto(true);
+  setIsSavingPhoto(true);
 
-    try {
-      const result = await uploadPhotosToSupabase();
+  try {
+    const result = await uploadPhotosToSupabase();
 
-      if (!result) {
-        alert("Gambar gagal disimpan. Sila cuba lagi.");
-        return;
-      }
-
-      setFinalFrameImage(result.finalDataUrl);
-
-      shareFileCache.current["final-frame"] = new File(
-        [result.blob],
-        "memoria-photo.png",
-        {
-          type: "image/png",
-        }
-      );
-
-      setGalleryPhotos((current) => [
-        ...current,
-        result.uploadedUrl,
-      ]);
-
-      setScreen("strip");
-    } catch (error) {
-      console.error("Save photo failed:", error);
+    if (!result) {
       alert("Gambar gagal disimpan. Sila cuba lagi.");
-    } finally {
-      setIsSavingPhoto(false);
+      return;
     }
-  }}
+
+    setFinalFrameImage(result.finalDataUrl);
+
+    shareFileCache.current["final-frame"] = new File(
+      [result.blob],
+      "memoria-photo.png",
+      {
+        type: "image/png",
+      }
+    );
+
+    setGalleryPhotos((current) => [
+      ...current,
+      result.uploadedUrl,
+    ]);
+
+    setScreen("strip");
+  } catch (error) {
+    console.error("Save photo failed:", error);
+    alert("Gambar gagal disimpan. Sila cuba lagi.");
+  } finally {
+    setIsSavingPhoto(false);
+  }
+}}
   className={`mt-6 transition active:scale-95 ${
     isSavingPhoto ? "pointer-events-none opacity-60" : ""
   }`}
