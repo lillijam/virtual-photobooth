@@ -1824,7 +1824,7 @@ if (screen === "gallery") {
   }}
 >
 <div className="relative min-h-[100dvh] w-full max-w-md overflow-visible">
-        <section className="relative z-10 min-h-screen px-6 py-10">
+        <section className="relative z-10 min-h-screen px-6 pb-10 pt-0">
 
 <div className="sticky top-0 z-50 -mx-6 bg-[#f7cfd1]/95 px-6 py-3 backdrop-blur-sm">
   <div className="relative flex items-center justify-center">
@@ -1991,9 +1991,9 @@ if (screen === "gallery-detail" && selectedGalleryPhoto) {
   const photo = selectedGalleryPhoto;
 
   return (
-    <main className="h-[100dvh] w-full overflow-y-auto overflow-x-hidden bg-[#f7cfd1] flex justify-center">
+    <main className="h-[100dvh] w-full overflow-hidden bg-[#f7cfd1] flex justify-center">
 <div
-  className="relative min-h-full w-full max-w-md overflow-visible"
+  className="relative h-full w-full max-w-md overflow-hidden"
         style={{
           background:
             "repeating-linear-gradient(90deg, #f7cfd1 0px, #f7cfd1 18px, #fff1f1 18px, #fff1f1 24px, #f7cfd1 24px, #f7cfd1 38px)",
