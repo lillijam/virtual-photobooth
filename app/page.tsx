@@ -1454,12 +1454,13 @@ if (screen === "home") {
   );
 }
 
-  // TEMPLATE
-  if (screen === "template") {
-    return (
-      <main className="min-h-screen bg-[#f7cfd1] flex justify-center">
+// TEMPLATE
+if (screen === "template") {
+  return (
+    <AppShell lockTouch>
+      <main className="h-full w-full overflow-hidden bg-[#f7cfd1] flex justify-center">
         <div
-          className="relative min-h-screen w-full max-w-md overflow-hidden"
+          className="relative h-full w-full max-w-md overflow-hidden"
           style={{
             background:
               "repeating-linear-gradient(90deg, #f7cfd1 0px, #f7cfd1 18px, #fff1f1 18px, #fff1f1 24px, #f7cfd1 24px, #f7cfd1 38px)",
@@ -1543,11 +1544,12 @@ if (screen === "home") {
             >
               USE THIS TEMPLATE
             </button>
-          </section>
+           </section>
         </div>
       </main>
-    );
-  }
+    </AppShell>
+  );
+}
 
   // PREVIEW
   if (screen === "preview") {
@@ -1777,9 +1779,10 @@ if (screen === "strip") {
 // GALLERY
 if (screen === "gallery") {
   return (
-    <main className="min-h-screen bg-[#f7cfd1] flex justify-center">
+    <AppShell lockTouch>
+  <main className="h-full w-full overflow-hidden bg-[#f7cfd1] flex justify-center">
       <div
-        className="relative min-h-screen w-full max-w-md overflow-hidden"
+        className="relative h-full w-full max-w-md overflow-hidden"
         style={{
           background:
             "repeating-linear-gradient(90deg, #f7cfd1 0px, #f7cfd1 18px, #fff1f1 18px, #fff1f1 24px, #f7cfd1 24px, #f7cfd1 38px)",
@@ -1939,7 +1942,8 @@ if (screen === "gallery") {
 )}
         </section>
       </div>
-    </main>
+      </main>
+    </AppShell>
   );
 }
 
