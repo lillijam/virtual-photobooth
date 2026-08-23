@@ -1829,7 +1829,7 @@ if (screen === "gallery") {
           <button
             type="button"
             onClick={() => setScreen("strip")}
-            className="text-xs text-[#8d7770]"
+            className="sticky top-0 z-50 bg-[#f7cfd1]/90 py-2 text-xs text-[#8d7770] backdrop-blur-sm"
           >
             ← Kembali
           </button>
