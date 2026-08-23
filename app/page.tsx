@@ -1826,47 +1826,48 @@ if (screen === "gallery") {
 <div className="relative min-h-[100dvh] w-full max-w-md overflow-visible">
 <section className="relative z-10 min-h-screen px-6 py-10">
 
-  <button
-    type="button"
-    onClick={() => setScreen("strip")}
-    className="text-xs text-[#8d7770]"
-  >
-    ← Kembali
-  </button>
+  <div className="mt-8 flex items-center justify-center gap-2">
 
-  <div className="mt-8 text-center">
+    <button
+      type="button"
+      onClick={() => setScreen("strip")}
+      className="text-xs text-[#8d7770] transition active:scale-90"
+    >
+      ← Kembali
+    </button>
 
     <h1 className="text-3xl font-serif italic text-[#8d7770]">
       Guest Gallery
     </h1>
 
-<p className="mt-2 text-sm text-[#9a817b]">
-  Semua momen, satu kenangan.
-</p>
+  </div>
 
-{/* FILTER */}
-            <div className="mt-6 flex justify-center gap-2">
-  {[
-    { id: "all", label: "Semua" },
-    { id: "polaroid", label: "Polaroid" },
-    { id: "4r", label: "4R" },
-    { id: "2r", label: "2R" },
-  ].map((filter) => (
-    <button
-      key={filter.id}
-      type="button"
-      onClick={() => setGalleryFilter(filter.id)}
-      className={`rounded-full border px-4 py-2 text-xs transition ${
-        galleryFilter === filter.id
-          ? "border-[#d98aaa] bg-[#d98aaa] text-white"
-          : "border-[#d8b7b3] bg-white/70 text-[#8d7770]"
-      }`}
-    >
-      {filter.label}
-    </button>
-  ))}
-</div>
-</div>
+  <p className="mt-2 text-center text-sm text-[#9a817b]">
+    Semua momen, satu kenangan.
+  </p>
+
+  {/* FILTER */}
+  <div className="mt-6 flex justify-center gap-2">
+    {[
+      { id: "all", label: "Semua" },
+      { id: "polaroid", label: "Polaroid" },
+      { id: "4r", label: "4R" },
+      { id: "2r", label: "2R" },
+    ].map((filter) => (
+      <button
+        key={filter.id}
+        type="button"
+        onClick={() => setGalleryFilter(filter.id)}
+        className={`rounded-full border px-4 py-2 text-xs transition ${
+          galleryFilter === filter.id
+            ? "border-[#d98aaa] bg-[#d98aaa] text-white"
+            : "border-[#d8b7b3] bg-white/70 text-[#8d7770]"
+        }`}
+      >
+        {filter.label}
+      </button>
+    ))}
+  </div>
 
 {isGalleryLoading ? (
   <div className="mt-16 flex flex-col items-center justify-center text-center">
