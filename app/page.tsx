@@ -1824,9 +1824,9 @@ if (screen === "gallery") {
   }}
 >
 <div className="relative min-h-[100dvh] w-full max-w-md overflow-visible">
-        <section className="relative z-10 min-h-screen px-6 pb-10 pt-0">
+<section className="relative z-10 min-h-screen px-6 pb-10 pt-3">
 
-<div className="sticky top-0 z-50 -mx-6 bg-[#f7cfd1]/95 px-6 py-3 backdrop-blur-sm">
+<div className="relative z-50 -mx-6 bg-[#f7cfd1]/95 px-6 pb-3 pt-3 backdrop-blur-sm">
   <div className="relative flex items-center justify-center">
 
     <button
