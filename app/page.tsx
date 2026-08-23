@@ -510,9 +510,26 @@ function TwoRFrame({
   );
 }
 
-function AppShell({ children }: { children: React.ReactNode }) {
+function AppShell({
+  children,
+  lockTouch = false,
+}: {
+  children: React.ReactNode;
+  lockTouch?: boolean;
+}) {
   return (
-    <div className="fixed inset-0 h-[100svh] w-full overflow-hidden">
+    <div
+      className="fixed inset-0 h-[100svh] w-full overflow-hidden"
+      style={{
+        touchAction: lockTouch ? "none" : "auto",
+        overscrollBehavior: lockTouch ? "none" : "auto",
+      }}
+      onTouchMove={
+        lockTouch
+          ? (event) => event.preventDefault()
+          : undefined
+      }
+    >
       {children}
     </div>
   );
@@ -1310,7 +1327,7 @@ useEffect(() => {
 // HOME
 if (screen === "home") {
   return (
-    <AppShell>
+    <AppShell lockTouch>
       <main className="h-full w-full overflow-hidden bg-[#f7cfd1] flex justify-center">
         <div
           className="relative h-full w-full max-w-md overflow-hidden"
