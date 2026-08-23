@@ -1165,8 +1165,14 @@ async function sharePhoto(elementId: string) {
   }
 
   try {
-    // PHONE / DEVICE yang menyokong file sharing
+    const isMobileDevice =
+      /Android|iPhone|iPad|iPod|Windows Phone/i.test(
+        navigator.userAgent
+      );
+
+    // PHONE / TABLET
     if (
+      isMobileDevice &&
       navigator.share &&
       navigator.canShare &&
       navigator.canShare({ files: [file] })
@@ -1181,18 +1187,17 @@ async function sharePhoto(elementId: string) {
     }
 
     // LAPTOP / DESKTOP
-    // Jika native file sharing tidak disokong,
-    // terus download gambar.
-    const link = document.createElement("a");
+    const url = URL.createObjectURL(file);
 
-    link.href = URL.createObjectURL(file);
+    const link = document.createElement("a");
+    link.href = url;
     link.download = "memoria-photo.png";
 
     document.body.appendChild(link);
     link.click();
     link.remove();
 
-    URL.revokeObjectURL(link.href);
+    URL.revokeObjectURL(url);
   } catch (error) {
     console.log("Share cancelled:", error);
   }
@@ -1635,7 +1640,7 @@ onClick={async () => {
     );
   }
 
-  // YOUR STRIP
+// YOUR STRIP
 if (screen === "strip") {
   return (
     <main className="min-h-screen bg-[#f7cfd1] flex justify-center">
@@ -1646,67 +1651,74 @@ if (screen === "strip") {
             "repeating-linear-gradient(90deg, #f7cfd1 0px, #f7cfd1 18px, #fff1f1 18px, #fff1f1 24px, #f7cfd1 24px, #f7cfd1 38px)",
         }}
       >
-        <section className="relative z-10 flex min-h-screen flex-col items-center px-6 py-10 text-center">
+        <section className="relative z-10 flex min-h-screen flex-col items-center px-6 pb-10 pt-8 text-center">
 
-          <button
-            type="button"
-            onClick={() => setScreen("home")}
-            className="absolute left-6 top-8 text-xs text-[#8d7770]"
-          >
-            Home
-          </button>
-          
-<button
-  type="button"
-  onClick={() => sharePhoto("final-frame")}
-  className="absolute right-6 top-8 z-20 transition active:scale-90"
->
-  <img
-    src="/icons/Share.svg"
-    alt="Share"
-    className="h-8 w-8"
-  />
-</button>
+          {/* TOP BAR */}
+          <div className="flex w-full items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setScreen("home")}
+              className="rounded-full px-3 py-2 text-xs text-[#8d7770] transition active:scale-90"
+            >
+              Home
+            </button>
 
-          <h1 className="mt-8 text-3xl font-bold text-[#d96f9b]">
+            <button
+              type="button"
+              onClick={() => sharePhoto("final-frame")}
+              className="rounded-full p-2 transition active:scale-90"
+            >
+              <img
+                src="/icons/Share.svg"
+                alt="Share"
+                className="h-8 w-8"
+              />
+            </button>
+          </div>
+
+          {/* TITLE */}
+          <h1 className="mt-5 text-3xl font-bold text-[#d96f9b]">
             Your Strip!
           </h1>
 
-<div
-  id="final-frame"
-  className="mt-8 w-full max-w-xs"
->
-  {finalFrameImage && (
-    <img
-      src={finalFrameImage}
-      alt="Your Strip"
-      className="w-full h-auto"
-      draggable={false}
-    />
-  )}
-</div>
+          {/* FINAL IMAGE */}
+          <div
+            id="final-frame"
+            className="mt-6 w-full max-w-xs overflow-hidden rounded-lg shadow-md"
+          >
+            {finalFrameImage && (
+              <img
+                src={finalFrameImage}
+                alt="Your Strip"
+                className="block h-auto w-full"
+                draggable={false}
+              />
+            )}
+          </div>
 
+          {/* MESSAGE */}
           <h2 className="mt-6 text-lg font-bold text-[#d96f9b]">
             Terima Kasih!
           </h2>
 
-          <p className="mt-3 text-sm leading-relaxed text-[#8d7770]">
+          <p className="mt-2 text-sm leading-relaxed text-[#8d7770]">
             Gambar anda telah
             <br />
             berjaya disimpan ke galeri.
           </p>
 
-<button
-  type="button"
-  onClick={() => setScreen("gallery")}
-  className="mt-6 transition active:scale-95"
->
-  <img
-    src="/icons/Lihat%20Galeri.svg"
-    alt="Lihat Galeri"
-    className="w-40"
-  />
-</button>
+          {/* GALLERY */}
+          <button
+            type="button"
+            onClick={() => setScreen("gallery")}
+            className="mt-5 transition active:scale-95"
+          >
+            <img
+              src="/icons/Lihat%20Galeri.svg"
+              alt="Lihat Galeri"
+              className="w-40"
+            />
+          </button>
 
         </section>
       </div>
@@ -1789,9 +1801,19 @@ if (screen === "gallery") {
     </button>
   </div>
 ) : galleryItems.length === 0 ? (
-  <p className="mt-12 text-center text-sm text-[#9a817b]">
-    Belum ada gambar.
-  </p>
+  <div className="mt-16 flex flex-col items-center text-center">
+    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/70 shadow-sm">
+      <span className="text-2xl text-[#d98aaa]">♡</span>
+    </div>
+
+    <p className="mt-5 text-sm font-medium text-[#8d7770]">
+      Belum ada gambar
+    </p>
+
+    <p className="mt-1 max-w-[220px] text-xs leading-relaxed text-[#a78d88]">
+      Momen anda akan muncul di sini selepas gambar pertama disimpan.
+    </p>
+  </div>
 ) : (
   <div className="mt-8 grid grid-cols-2 gap-3">
 
@@ -1821,40 +1843,48 @@ if (screen === "gallery") {
             draggable={false}
           />
 
-          <div className="mt-1 flex items-center justify-between bg-white px-2 py-1">
-            <div className="flex flex-col text-[9px] leading-tight text-[#8d7770]">
-              <span>
-                {new Date(photo.created_at).toLocaleTimeString("en-MY", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
+<div className="mt-1 flex items-center justify-between rounded-b-lg bg-white/90 px-2.5 py-2">
+  <div className="flex flex-col text-left leading-tight text-[#8d7770]">
+    <span className="text-[10px] font-medium">
+      {new Date(photo.created_at).toLocaleTimeString("en-MY", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}
+    </span>
 
-              <span>
-                {new Date(photo.created_at).toLocaleDateString("en-MY", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })}
-              </span>
-            </div>
+    <span className="mt-0.5 text-[9px] text-[#b19a95]">
+      {new Date(photo.created_at).toLocaleDateString("en-MY", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })}
+    </span>
+  </div>
 
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                likePhoto(photo.id, photo.likes);
-              }}
-              className={`rounded-full px-2.5 py-1 text-[10px] transition active:scale-90 ${
-                likedPhotoIds.includes(photo.id)
-                  ? "bg-pink-400 text-white"
-                  : "bg-pink-200 text-black"
-              }`}
-            >
-              {likedPhotoIds.includes(photo.id) ? "♥" : "♡"}{" "}
-              {photo.likes}
-            </button>
-          </div>
+  <button
+    type="button"
+    aria-label={
+      likedPhotoIds.includes(photo.id)
+        ? "Unlike photo"
+        : "Like photo"
+    }
+    onClick={(e) => {
+      e.stopPropagation();
+      likePhoto(photo.id, photo.likes);
+    }}
+    className={`flex min-w-[52px] items-center justify-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-medium transition active:scale-90 ${
+      likedPhotoIds.includes(photo.id)
+        ? "bg-pink-400 text-white shadow-sm"
+        : "bg-pink-100 text-[#8d7770]"
+    }`}
+  >
+    <span className="text-sm leading-none">
+      {likedPhotoIds.includes(photo.id) ? "♥" : "♡"}
+    </span>
+
+    <span>{photo.likes}</span>
+  </button>
+</div>
         </div>
       ))}
   </div>
@@ -1912,72 +1942,62 @@ if (screen === "gallery-detail" && selectedGalleryPhoto) {
 </button>
           </div>
 
-          {/* PHOTO */}
+{/* PHOTO */}
 <div
   id="gallery-detail-photo"
-  className="mt-8 overflow-hidden bg-transparent p-0 shadow-md"
+  className="mt-8 overflow-hidden rounded-2xl bg-white/30 shadow-md"
 >
-<img
-  src={photo.image_url}
-  alt="Gallery photo"
-  loading="lazy"
-  className="h-auto w-full object-contain"
-  draggable={false}
-/>
+  <img
+    src={photo.image_url}
+    alt="Gallery photo"
+    loading="lazy"
+    className="block h-auto w-full object-contain"
+    draggable={false}
+  />
+</div>
 
-            {!photo.template_id && (
-              <img
-                src={photo.image_url}
-                alt="Gallery photo"
-                className="w-full rounded-lg object-cover"
-              />
-            )}
-          </div>
+{/* INFO */}
+<div className="mt-4 flex items-center justify-between gap-4">
+  <div className="min-w-0 text-left text-xs leading-relaxed text-[#8d7770]">
+    <p>
+      {new Date(photo.created_at).toLocaleTimeString("en-MY", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}
+      {" · "}
+      {new Date(photo.created_at).toLocaleDateString("en-MY", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })}
+    </p>
 
-          {/* INFO */}
-          <div className="mt-4 flex items-start justify-between">
-            <div className="text-left text-xs leading-relaxed text-[#8d7770]">
-              <p>
-                {new Date(photo.created_at).toLocaleTimeString(
-                  "en-MY",
-                  {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }
-                )}
-                {" · "}
-                {new Date(photo.created_at).toLocaleDateString(
-                  "en-MY",
-                  {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  }
-                )}
-              </p>
+    <p className="mt-1 truncate text-[#b19a95]">
+      A moment by {photo.guest_name ?? "Guest"}
+    </p>
+  </div>
 
-              <p className="mt-1">
-                A moment by {photo.guest_name ?? "Guest"}
-              </p>
-            </div>
+{/* LIKE */}
+<button
+  type="button"
+  aria-label={
+    likedPhotoIds.includes(photo.id)
+      ? "Unlike photo"
+      : "Like photo"
+  }
+  onClick={() => likePhoto(photo.id, photo.likes)}
+  className={`flex min-w-[58px] items-center justify-center gap-1 rounded-full px-3 py-2 text-xs font-medium shadow-sm transition active:scale-90 ${
+    likedPhotoIds.includes(photo.id)
+      ? "bg-pink-400 text-white"
+      : "bg-white/90 text-[#8d7770]"
+  }`}
+>
+  <span className="text-sm leading-none">
+    {likedPhotoIds.includes(photo.id) ? "♥" : "♡"}
+  </span>
 
-            {/* LIKE */}
-            <button
-              type="button"
-              onClick={() =>
-                likePhoto(photo.id, photo.likes)
-              }
-              className={`rounded-full px-3 py-2 text-xs shadow-sm transition active:scale-90 ${
-                likedPhotoIds.includes(photo.id)
-                  ? "bg-pink-400 text-white"
-                  : "bg-white text-[#8d7770]"
-              }`}
-            >
-              {likedPhotoIds.includes(photo.id)
-                ? "♥"
-                : "♡"}{" "}
-              {photo.likes}
-            </button>
+  <span>{photo.likes}</span>
+</button>
           </div>
         </section>
       </div>
