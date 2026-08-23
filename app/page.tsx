@@ -1813,10 +1813,16 @@ if (screen === "strip") {
 // GALLERY
 if (screen === "gallery") {
   return (
-    <AppShell lockTouch>
-  <main className="h-full w-full overflow-hidden bg-[#f7cfd1] flex justify-center">
-      <div
-        className="relative h-full w-full max-w-md overflow-hidden"
+    <main
+      className="fixed inset-0 h-[100dvh] w-full overflow-x-hidden overflow-y-scroll bg-[#f7cfd1]"
+      style={{
+        touchAction: "pan-y",
+        overscrollBehaviorY: "contain",
+        WebkitOverflowScrolling: "touch",
+      }}
+    >
+<div
+  className="relative min-h-[100dvh] w-full max-w-md overflow-visible"
         style={{
           background:
             "repeating-linear-gradient(90deg, #f7cfd1 0px, #f7cfd1 18px, #fff1f1 18px, #fff1f1 24px, #f7cfd1 24px, #f7cfd1 38px)",
@@ -1977,7 +1983,6 @@ if (screen === "gallery") {
         </section>
       </div>
       </main>
-    </AppShell>
   );
 }
 
@@ -1986,9 +1991,9 @@ if (screen === "gallery-detail" && selectedGalleryPhoto) {
   const photo = selectedGalleryPhoto;
 
   return (
-    <main className="min-h-screen bg-[#f7cfd1] flex justify-center">
-      <div
-        className="relative min-h-screen w-full max-w-md overflow-hidden"
+    <main className="h-[100dvh] w-full overflow-y-auto overflow-x-hidden bg-[#f7cfd1] flex justify-center">
+<div
+  className="relative min-h-full w-full max-w-md overflow-visible"
         style={{
           background:
             "repeating-linear-gradient(90deg, #f7cfd1 0px, #f7cfd1 18px, #fff1f1 18px, #fff1f1 24px, #f7cfd1 24px, #f7cfd1 38px)",
