@@ -1554,9 +1554,10 @@ if (screen === "template") {
   // PREVIEW
   if (screen === "preview") {
     return (
-      <main className="h-[100svh] overflow-hidden bg-[#f7cfd1] flex justify-center">
+      <AppShell lockTouch>
+  <main className="h-full w-full overflow-hidden bg-[#f7cfd1] flex justify-center">
         <div
-          className="relative min-h-[100dvh] w-full max-w-md overflow-hidden"
+          className="relative h-full w-full max-w-md overflow-hidden"
           style={{
             background:
               "repeating-linear-gradient(90deg, #f7cfd1 0px, #f7cfd1 18px, #fff1f1 18px, #fff1f1 24px, #f7cfd1 24px, #f7cfd1 38px)",
@@ -1687,8 +1688,9 @@ onClick={async () => {
           </section>
         </div>
       </main>
-    );
-  }
+    </AppShell>
+  );
+}
 
 // YOUR STRIP
 if (screen === "strip") {
