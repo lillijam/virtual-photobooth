@@ -1551,11 +1551,11 @@ if (screen === "template") {
   );
 }
 
-  // PREVIEW
-  if (screen === "preview") {
-    return (
-      <AppShell lockTouch>
-  <main className="h-full w-full overflow-hidden bg-[#f7cfd1] flex justify-center">
+// PREVIEW
+if (screen === "preview") {
+  return (
+    <AppShell lockTouch>
+      <main className="h-full w-full overflow-hidden bg-[#f7cfd1] flex justify-center">
         <div
           className="relative h-full w-full max-w-md overflow-hidden"
           style={{
@@ -1563,127 +1563,157 @@ if (screen === "template") {
               "repeating-linear-gradient(90deg, #f7cfd1 0px, #f7cfd1 18px, #fff1f1 18px, #fff1f1 24px, #f7cfd1 24px, #f7cfd1 38px)",
           }}
         >
-          <section className="relative z-10 flex h-[100dvh] flex-col items-center overflow-hidden px-5 pt-4 text-center sm:px-6 sm:pt-8">
-            <h1 className="mt-2 text-3xl font-serif italic text-[#8d7770]">
+          <section className="relative z-10 flex h-full w-full flex-col items-center overflow-hidden px-5 pt-4 text-center">
+
+            {/* TOP BAR */}
+            <div className="flex w-full items-center justify-start">
+              <button
+                type="button"
+                onClick={() => setScreen("home")}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/70 shadow-sm transition active:scale-90"
+              >
+                <img
+                  src="/icons/Home.svg"
+                  alt="Home"
+                  className="h-5 w-5"
+                />
+              </button>
+            </div>
+
+            {/* TITLE */}
+            <h1 className="mt-1 text-3xl font-serif italic text-[#8d7770]">
               Preview
             </h1>
 
-            <p className="mt-2 text-sm text-[#9a817b]">
+            <p className="mt-1 text-sm text-[#9a817b]">
               {guestName}
             </p>
 
-<div
-  id="final-frame"
-  className="mt-4 w-full max-w-md rounded-2xl bg-white/60 p-3 shadow-md sm:mt-8 sm:p-4"
->
-  <div
-    id="final-frame-content"
-    className="space-y-3"
-  >
-{selectedTemplate === "polaroid" && photos[0] && (
-  <PolaroidFrame photo={photos[0]} />
-)}
+            {/* FRAME */}
+            <div
+              id="final-frame"
+              className="mt-3 flex w-full flex-1 items-center justify-center overflow-hidden"
+            >
+              <div
+                id="final-frame-content"
+                className="flex max-h-full w-full items-center justify-center overflow-hidden"
+              >
+                {selectedTemplate === "polaroid" && photos[0] && (
+                  <PolaroidFrame
+                    photo={photos[0]}
+                    interactive={true}
+                  />
+                )}
 
-{selectedTemplate === "4r" && photos.length >= 2 && (
-  <FourRFrame
-    photos={photos}
-    uploadedPhotoIndexes={uploadedPhotoIndexes}
-  />
-)}
+                {selectedTemplate === "4r" && photos.length >= 2 && (
+                  <FourRFrame
+                    photos={photos}
+                    uploadedPhotoIndexes={uploadedPhotoIndexes}
+                    interactive={true}
+                  />
+                )}
 
-{selectedTemplate === "2r" && photos.length >= 3 && (
-  <TwoRFrame photos={photos} />
-)}
+                {selectedTemplate === "2r" && photos.length >= 3 && (
+                  <TwoRFrame
+                    photos={photos}
+                    interactive={true}
+                  />
+                )}
 
-{selectedTemplate !== "polaroid" &&
-  selectedTemplate !== "4r" &&
-  selectedTemplate !== "2r" &&
-  photos.map((photo, index) => (
-    <img
-      key={index}
-      src={photo}
-      alt={`Photo ${index + 1}`}
-      className="w-full rounded-lg"
-    />
-  ))}
+                {selectedTemplate !== "polaroid" &&
+                  selectedTemplate !== "4r" &&
+                  selectedTemplate !== "2r" &&
+                  photos.map((photo, index) => (
+                    <img
+                      key={index}
+                      src={photo}
+                      alt={`Photo ${index + 1}`}
+                      className="max-h-full max-w-full rounded-lg object-contain"
+                    />
+                  ))}
               </div>
             </div>
 
-            <p className="mt-3 text-xs text-[#8d7770]">
+            {/* INSTRUCTION */}
+            <p className="mt-2 text-[11px] text-[#8d7770]">
               Drag &amp; pinch to adjust the photo
             </p>
 
-<button
-  type="button"
-  onClick={() => {
-    setPhotos([]);
-    setScreen("camera");
-  }}
-  className="mt-3 transition active:scale-95"
->
-  <img
-    src="/icons/Ambil%20Semula.svg"
-    alt="Ambil semula"
-    className="w-34"
-  />
-</button>
+            {/* AMBIL SEMULA */}
+            <button
+              type="button"
+              onClick={() => {
+                setPhotos([]);
+                setScreen("camera");
+              }}
+              className="mt-2 transition active:scale-95"
+            >
+              <img
+                src="/icons/Ambil%20Semula.svg"
+                alt="Ambil semula"
+                className="w-32"
+              />
+            </button>
 
-<button
-  type="button"
-  disabled={isSavingPhoto}
-onClick={async () => {
-  if (isSavingPhoto) return;
+            {/* GUNAKAN GAMBAR */}
+            <button
+              type="button"
+              disabled={isSavingPhoto}
+              onClick={async () => {
+                if (isSavingPhoto) return;
 
-  setIsSavingPhoto(true);
+                setIsSavingPhoto(true);
 
-  try {
-    const result = await uploadPhotosToSupabase();
+                try {
+                  const result = await uploadPhotosToSupabase();
 
-    if (!result) {
-      alert("Gambar gagal disimpan. Sila cuba lagi.");
-      return;
-    }
+                  if (!result) {
+                    alert("Gambar gagal disimpan. Sila cuba lagi.");
+                    return;
+                  }
 
-    setFinalFrameImage(result.finalDataUrl);
+                  setFinalFrameImage(result.finalDataUrl);
 
-    shareFileCache.current["final-frame"] = new File(
-      [result.blob],
-      "memoria-photo.png",
-      {
-        type: "image/png",
-      }
-    );
+                  shareFileCache.current["final-frame"] = new File(
+                    [result.blob],
+                    "memoria-photo.png",
+                    {
+                      type: "image/png",
+                    }
+                  );
 
-    setGalleryPhotos((current) => [
-      ...current,
-      result.uploadedUrl,
-    ]);
+                  setGalleryPhotos((current) => [
+                    ...current,
+                    result.uploadedUrl,
+                  ]);
 
-    setScreen("strip");
-  } catch (error) {
-    console.error("Save photo failed:", error);
-    alert("Gambar gagal disimpan. Sila cuba lagi.");
-  } finally {
-    setIsSavingPhoto(false);
-  }
-}}
-  className={`mt-3 transition active:scale-95 ${
-    isSavingPhoto ? "pointer-events-none opacity-60" : ""
-  }`}
->
-  {isSavingPhoto ? (
-    <div className="flex w-40 items-center justify-center gap-2 rounded-full bg-white/70 px-5 py-3 text-sm text-[#8d7770]">
-      <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#d98aaa] border-t-transparent" />
-      Menyimpan...
-    </div>
-  ) : (
-    <img
-      src="/icons/Gunakan%20Gambar.svg"
-      alt="Gunakan gambar"
-      className="w-40"
-    />
-  )}
-</button>
+                  setScreen("strip");
+                } catch (error) {
+                  console.error("Save photo failed:", error);
+                  alert("Gambar gagal disimpan. Sila cuba lagi.");
+                } finally {
+                  setIsSavingPhoto(false);
+                }
+              }}
+              className={`mt-2 mb-3 transition active:scale-95 ${
+                isSavingPhoto
+                  ? "pointer-events-none opacity-60"
+                  : ""
+              }`}
+            >
+              {isSavingPhoto ? (
+                <div className="flex w-36 items-center justify-center gap-2 rounded-full bg-white/70 px-4 py-2 text-xs text-[#8d7770]">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#d98aaa] border-t-transparent" />
+                  Menyimpan...
+                </div>
+              ) : (
+                <img
+                  src="/icons/Gunakan%20Gambar.svg"
+                  alt="Gunakan gambar"
+                  className="w-36"
+                />
+              )}
+            </button>
 
           </section>
         </div>
