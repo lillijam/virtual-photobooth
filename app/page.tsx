@@ -1695,15 +1695,16 @@ onClick={async () => {
 // YOUR STRIP
 if (screen === "strip") {
   return (
-    <main className="h-[100dvh] overflow-hidden bg-[#f7cfd1] flex justify-center">
+    <AppShell lockTouch>
+  <main className="h-full w-full overflow-hidden bg-[#f7cfd1] flex justify-center">
       <div
-        className="relative h-[100svh] w-full max-w-md overflow-hidden"
+        className="relative h-full w-full max-w-md overflow-hidden"
         style={{
           background:
             "repeating-linear-gradient(90deg, #f7cfd1 0px, #f7cfd1 18px, #fff1f1 18px, #fff1f1 24px, #f7cfd1 24px, #f7cfd1 38px)",
         }}
       >
-        <section className="relative z-10 flex min-h-screen flex-col items-center px-6 pb-10 pt-8 text-center">
+        <section className="relative z-10 flex h-full w-full flex-col items-center overflow-hidden px-6 pb-10 pt-8 text-center">
 
           {/* TOP BAR */}
           <div className="flex w-full items-center justify-between">
@@ -1775,6 +1776,7 @@ if (screen === "strip") {
         </section>
       </div>
     </main>
+  </AppShell>
   );
 }
 
