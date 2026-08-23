@@ -1813,14 +1813,14 @@ if (screen === "strip") {
 // GALLERY
 if (screen === "gallery") {
   return (
-    <main
-      className="fixed inset-0 h-[100dvh] w-full overflow-x-hidden overflow-y-scroll bg-[#f7cfd1]"
-      style={{
-        touchAction: "pan-y",
-        overscrollBehaviorY: "contain",
-        WebkitOverflowScrolling: "touch",
-      }}
-    >
+<main
+  className="fixed inset-0 flex h-[100dvh] w-full justify-center overflow-x-hidden overflow-y-scroll bg-[#f7cfd1]"
+  style={{
+    touchAction: "pan-y",
+    overscrollBehaviorY: "contain",
+    WebkitOverflowScrolling: "touch",
+  }}
+>
 <div
   className="relative min-h-[100dvh] w-full max-w-md overflow-visible"
         style={{
