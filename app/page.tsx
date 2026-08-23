@@ -1399,15 +1399,16 @@ if (screen === "home") {
   // GUEST NAME
   if (screen === "guest") {
     return (
-      <main className="min-h-screen bg-[#f7cfd1] flex justify-center">
+      <AppShell lockTouch>
+  <main className="h-full w-full overflow-hidden bg-[#f7cfd1] flex justify-center">
         <div
-          className="relative min-h-screen w-full max-w-md overflow-hidden"
+          className="relative h-full w-full max-w-md overflow-hidden"
           style={{
             background:
               "repeating-linear-gradient(90deg, #f7cfd1 0px, #f7cfd1 18px, #fff1f1 18px, #fff1f1 24px, #f7cfd1 24px, #f7cfd1 38px)",
           }}
         >
-          <section className="relative z-10 flex min-h-screen flex-col items-center justify-center px-8 text-center">
+         <section className="relative z-10 flex h-full w-full flex-col items-center justify-center overflow-hidden px-8 text-center">
             <p className="text-xs uppercase tracking-[0.3em] text-[#9a817b]">
               NADIA X SAFIQ
             </p>
@@ -1447,10 +1448,11 @@ if (screen === "home") {
               ← Kembali
             </button>
           </section>
-        </div>
-      </main>
-    );
-  }
+      </div>
+    </main>
+  </AppShell>
+  );
+}
 
   // TEMPLATE
   if (screen === "template") {
