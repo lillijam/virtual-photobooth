@@ -518,6 +518,7 @@ const [isHydrated, setIsHydrated] = useState(false);
   const [timer, setTimer] = useState(3);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [isSavingPhoto, setIsSavingPhoto] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 const [photos, setPhotos] = useState<string[]>([]);
 const [finalFrameImage, setFinalFrameImage] = useState<string | null>(null);
 const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
@@ -1098,9 +1099,13 @@ async function likePhoto(photoId: number, currentLikes: number) {
 }
 
 async function downloadPhoto() {
+  if (isDownloading) return;
+
   const element = document.getElementById("final-frame");
 
   if (!element) return;
+
+  setIsDownloading(true);
 
   try {
     const canvas = await html2canvas(element, {
@@ -1115,6 +1120,9 @@ async function downloadPhoto() {
     link.click();
   } catch (error) {
     console.error("Download failed:", error);
+    alert("Gambar tidak dapat dimuat turun. Sila cuba lagi.");
+  } finally {
+    setIsDownloading(false);
   }
 }
 
@@ -1157,6 +1165,7 @@ async function sharePhoto(elementId: string) {
   }
 
   try {
+    // PHONE / DEVICE yang menyokong file sharing
     if (
       navigator.share &&
       navigator.canShare &&
@@ -1171,16 +1180,19 @@ async function sharePhoto(elementId: string) {
       return;
     }
 
-    if (navigator.share) {
-      await navigator.share({
-        title: "Memoria",
-        text: "A moment by Memoria",
-      });
+    // LAPTOP / DESKTOP
+    // Jika native file sharing tidak disokong,
+    // terus download gambar.
+    const link = document.createElement("a");
 
-      return;
-    }
+    link.href = URL.createObjectURL(file);
+    link.download = "memoria-photo.png";
 
-    alert("Fungsi share tidak disokong oleh browser ini.");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    URL.revokeObjectURL(link.href);
   } catch (error) {
     console.log("Share cancelled:", error);
   }
@@ -2119,7 +2131,7 @@ style={{
 <p className="mt-4 text-xs text-[#9a817b]">
   {countdown !== null
     ? "Get ready..."
-    : `Tap to take photo ${currentPhoto} of 3`}
+    : `Tap to take photo ${currentPhoto} of ${requiredPhotos}`}
 </p>
         </section>
       </div>
