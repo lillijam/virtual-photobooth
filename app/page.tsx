@@ -2061,15 +2061,16 @@ if (screen === "gallery-detail" && selectedGalleryPhoto) {
   const currentPhoto = photos.length + 1;
 
   return (
-    <main className="min-h-screen bg-[#f7cfd1] flex justify-center">
+    <AppShell lockTouch>
+  <main className="h-full w-full overflow-hidden bg-[#f7cfd1] flex justify-center">
       <div
-        className="relative min-h-screen w-full max-w-md overflow-hidden"
+        className="relative h-full w-full max-w-md overflow-hidden"
         style={{
           background:
             "repeating-linear-gradient(90deg, #f7cfd1 0px, #f7cfd1 18px, #fff1f1 18px, #fff1f1 24px, #f7cfd1 24px, #f7cfd1 38px)",
         }}
       >
-        <section className="relative z-10 flex min-h-screen flex-col items-center px-5 pb-6 pt-6 text-center sm:px-6 sm:py-10">
+        <section className="relative z-10 flex h-full w-full flex-col items-center overflow-hidden px-5 pb-6 pt-6 text-center sm:px-6 sm:py-10">
           <button
             type="button"
             onClick={() => setScreen("template")}
@@ -2208,5 +2209,6 @@ style={{
         </section>
       </div>
     </main>
+  </AppShell>
   );
 }
