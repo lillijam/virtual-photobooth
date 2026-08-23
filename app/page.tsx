@@ -1814,20 +1814,16 @@ if (screen === "strip") {
 if (screen === "gallery") {
   return (
 <main
-  className="fixed inset-0 flex h-[100dvh] w-full justify-center overflow-x-hidden overflow-y-scroll bg-[#f7cfd1]"
+  className="fixed inset-0 flex h-[100dvh] w-full justify-center overflow-x-hidden overflow-y-scroll"
   style={{
+    background:
+      "repeating-linear-gradient(90deg, #f7cfd1 0px, #f7cfd1 18px, #fff1f1 18px, #fff1f1 24px, #f7cfd1 24px, #f7cfd1 38px)",
     touchAction: "pan-y",
     overscrollBehaviorY: "contain",
     WebkitOverflowScrolling: "touch",
   }}
 >
-<div
-  className="relative min-h-[100dvh] w-full max-w-md overflow-visible"
-        style={{
-          background:
-            "repeating-linear-gradient(90deg, #f7cfd1 0px, #f7cfd1 18px, #fff1f1 18px, #fff1f1 24px, #f7cfd1 24px, #f7cfd1 38px)",
-        }}
-      >
+<div className="relative min-h-[100dvh] w-full max-w-md overflow-visible">
         <section className="relative z-10 min-h-screen px-6 py-10">
 
           <button
