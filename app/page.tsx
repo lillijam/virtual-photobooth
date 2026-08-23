@@ -1307,58 +1307,77 @@ useEffect(() => {
   }
 }, [photos, isHydrated]);
 
-  // HOME
-  if (screen === "home") {
-    return (
-      <AppShell>
-     <main className="h-full w-full overflow-hidden bg-[#f7cfd1] flex justify-center">
+// HOME
+if (screen === "home") {
+  return (
+    <AppShell>
+      <main className="h-full w-full overflow-hidden bg-[#f7cfd1] flex justify-center">
         <div
-          className="relative min-h-screen w-full max-w-md overflow-hidden"
+          className="relative h-full w-full max-w-md overflow-hidden"
           style={{
             background:
               "repeating-linear-gradient(90deg, #f7cfd1 0px, #f7cfd1 18px, #fff1f1 18px, #fff1f1 24px, #f7cfd1 24px, #f7cfd1 38px)",
           }}
         >
-          <section className="relative z-10 flex min-h-screen flex-col items-center justify-center px-8 text-center">
-            <p className="mb-6 text-[10px] uppercase tracking-[0.3em] text-[#8b7370]">
+          <section className="relative z-10 flex h-full w-full flex-col items-center overflow-hidden px-6 text-center">
+
+            {/* WEDDING DATE */}
+            <p className="mt-[8vh] text-[9px] uppercase tracking-[0.25em] text-[#8d7770]">
               SABTU
               <br />
               05 DISEMBER 2026
             </p>
 
-            <h1 className="text-4xl font-serif italic text-[#8d7770]">
-              Nadia
-            </h1>
+            {/* COUPLE */}
+            <div className="mt-[7vh]">
+              <h1 className="text-4xl font-serif italic leading-none text-[#8d7770]">
+                Nadia
+              </h1>
 
-            <p className="my-1 text-sm text-[#9a817b]">&amp;</p>
+              <p className="my-1 text-sm text-[#8d7770]">
+                &
+              </p>
 
-            <h1 className="text-4xl font-serif italic text-[#8d7770]">
-              Safiq
-            </h1>
+              <h1 className="text-4xl font-serif italic leading-none text-[#8d7770]">
+                Safiq
+              </h1>
+            </div>
 
-            <div className="my-10">
-              <p className="text-xs uppercase tracking-[0.35em] text-[#9a817b]">
+            {/* TAGLINE */}
+            <div className="mt-[8vh]">
+              <p className="text-[10px] uppercase tracking-[0.35em] text-[#9a817b]">
                 LOVE, CAPTURED
               </p>
 
-              <p className="mt-3 text-sm text-[#8d7770]">
+              <p className="mt-2 text-[10px] text-[#8d7770]">
                 Setiap momen menjadi kenangan.
               </p>
             </div>
 
+            {/* START */}
             <button
               type="button"
               onClick={() => setScreen("guest")}
-              className="rounded-full bg-[#ead34f] px-10 py-3 text-sm font-medium text-[#6f6250] shadow-md transition hover:scale-105 active:scale-95"
+              className="mt-[7vh] rounded-full bg-[#ead34f] px-8 py-2 text-xs font-medium text-[#6f6250] shadow-md transition active:scale-95"
             >
               START
             </button>
+
+            {/* GALLERY */}
+            <button
+              type="button"
+              onClick={() => setScreen("gallery")}
+              className="mt-4 text-[10px] text-[#8d7770] underline underline-offset-2"
+            >
+              Lihat Galeri
+            </button>
+
           </section>
         </div>
       </main>
-        </AppShell>
-    );
-  }
+    </AppShell>
+  );
+}
 
   // GUEST NAME
   if (screen === "guest") {
