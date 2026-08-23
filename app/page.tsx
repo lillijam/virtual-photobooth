@@ -1589,36 +1589,42 @@ if (screen === "preview") {
               {guestName}
             </p>
 
-            {/* FRAME */}
-            <div
-              id="final-frame"
-              className="mt-3 flex w-full flex-1 items-center justify-center overflow-hidden"
-            >
-              <div
-                id="final-frame-content"
-                className="flex max-h-full w-full items-center justify-center overflow-hidden"
-              >
-                {selectedTemplate === "polaroid" && photos[0] && (
-                  <PolaroidFrame
-                    photo={photos[0]}
-                    interactive={true}
-                  />
-                )}
+{/* FRAME */}
+<div
+  id="final-frame"
+  className="mt-3 flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden"
+>
+  <div
+    id="final-frame-content"
+    className="flex min-h-0 min-w-0 max-h-full max-w-full items-center justify-center overflow-hidden"
+  >
+{selectedTemplate === "polaroid" && photos[0] && (
+  <div className="flex max-h-full max-w-full items-center justify-center">
+    <PolaroidFrame
+      photo={photos[0]}
+      interactive={true}
+    />
+  </div>
+)}
 
-                {selectedTemplate === "4r" && photos.length >= 2 && (
-                  <FourRFrame
-                    photos={photos}
-                    uploadedPhotoIndexes={uploadedPhotoIndexes}
-                    interactive={true}
-                  />
-                )}
+{selectedTemplate === "4r" && photos.length >= 2 && (
+  <div className="flex max-h-full max-w-full items-center justify-center">
+    <FourRFrame
+      photos={photos}
+      uploadedPhotoIndexes={uploadedPhotoIndexes}
+      interactive={true}
+    />
+  </div>
+)}
 
-                {selectedTemplate === "2r" && photos.length >= 3 && (
-                  <TwoRFrame
-                    photos={photos}
-                    interactive={true}
-                  />
-                )}
+{selectedTemplate === "2r" && photos.length >= 3 && (
+  <div className="flex max-h-full max-w-full items-center justify-center">
+    <TwoRFrame
+      photos={photos}
+      interactive={true}
+    />
+  </div>
+)}
 
                 {selectedTemplate !== "polaroid" &&
                   selectedTemplate !== "4r" &&
