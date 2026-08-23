@@ -582,6 +582,10 @@ const [detailShareReady, setDetailShareReady] = useState(false);
 useEffect(() => {
   let mounted = true;
 
+  if (screen === "template") {
+    window.scrollTo(0, 0);
+  }
+
   async function initAnonymousUser() {
     // Cuba guna session anonymous yang sedia ada
     const {
@@ -1831,7 +1835,7 @@ if (screen === "gallery") {
 
   <button
     type="button"
-    onClick={() => setScreen("strip")}
+    onClick={() => setScreen("home")}
     className="absolute left-0 text-[11px] text-[#8d7770] transition active:scale-90"
   >
     ← Kembali
