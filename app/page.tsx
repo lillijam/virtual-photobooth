@@ -1504,16 +1504,16 @@ useEffect(() => {
   // PREVIEW
   if (screen === "preview") {
     return (
-      <main className="min-h-screen bg-[#f7cfd1] flex justify-center">
+      <main className="min-h-[100dvh] bg-[#f7cfd1] flex justify-center overflow-x-hidden">
         <div
-          className="relative min-h-screen w-full max-w-md overflow-hidden"
+          className="relative min-h-[100dvh] w-full max-w-md overflow-hidden"
           style={{
             background:
               "repeating-linear-gradient(90deg, #f7cfd1 0px, #f7cfd1 18px, #fff1f1 18px, #fff1f1 24px, #f7cfd1 24px, #f7cfd1 38px)",
           }}
         >
-          <section className="relative z-10 min-h-screen px-6 py-12 text-center">
-            <h1 className="mt-8 text-3xl font-serif italic text-[#8d7770]">
+          <section className="relative z-10 flex min-h-[100dvh] flex-col items-center px-5 pb-6 pt-5 text-center sm:px-6 sm:py-10">
+            <h1 className="mt-2 text-3xl font-serif italic text-[#8d7770]">
               Preview
             </h1>
 
@@ -1523,7 +1523,7 @@ useEffect(() => {
 
 <div
   id="final-frame"
-  className="mt-8 rounded-2xl bg-white/60 p-4 shadow-md"
+  className="mt-4 w-full max-w-md rounded-2xl bg-white/60 p-3 shadow-md sm:mt-8 sm:p-4"
 >
   <div
     id="final-frame-content"
@@ -1558,7 +1558,7 @@ useEffect(() => {
               </div>
             </div>
 
-            <p className="mt-5 text-xs text-[#8d7770]">
+            <p className="mt-3 text-xs text-[#8d7770]">
               Drag &amp; pinch to adjust the photo
             </p>
 
@@ -1568,7 +1568,7 @@ useEffect(() => {
     setPhotos([]);
     setScreen("camera");
   }}
-  className="mt-6 transition active:scale-95"
+  className="mt-3 transition active:scale-95"
 >
   <img
     src="/icons/Ambil%20Semula.svg"
@@ -1616,7 +1616,7 @@ onClick={async () => {
     setIsSavingPhoto(false);
   }
 }}
-  className={`mt-6 transition active:scale-95 ${
+  className={`mt-3 transition active:scale-95 ${
     isSavingPhoto ? "pointer-events-none opacity-60" : ""
   }`}
 >
