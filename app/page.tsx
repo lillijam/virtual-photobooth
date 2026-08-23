@@ -1417,7 +1417,7 @@ useEffect(() => {
               "repeating-linear-gradient(90deg, #f7cfd1 0px, #f7cfd1 18px, #fff1f1 18px, #fff1f1 24px, #f7cfd1 24px, #f7cfd1 38px)",
           }}
         >
-          <section className="relative z-10 min-h-screen px-6 py-12 text-center">
+          <section className="relative z-10 flex h-[100dvh] flex-col items-center overflow-hidden px-5 pb-4 pt-5 text-center sm:px-6 sm:py-10">
             <button
               type="button"
               onClick={() => setScreen("guest")}
@@ -1426,11 +1426,11 @@ useEffect(() => {
               ← Kembali
             </button>
 
-            <p className="mt-8 text-xs uppercase tracking-[0.3em] text-[#9a817b]">
+            <p className="mt-3 text-xs uppercase tracking-[0.3em] text-[#9a817b]">
               {guestName}
             </p>
 
-            <h1 className="mt-5 text-3xl font-serif italic text-[#8d7770]">
+            <h1 className="mt-3 text-3xl font-serif italic text-[#8d7770]">
               Your Frame
             </h1>
 
@@ -1438,7 +1438,7 @@ useEffect(() => {
               Pilih template kegemaran anda
             </p>
 
-            <div className="mt-10 space-y-5">
+            <div className="mt-5 w-full space-y-3">
               {templates.map((template) => {
                 const isSelected = selectedTemplate === template.id;
 
@@ -1447,14 +1447,14 @@ useEffect(() => {
                     key={template.id}
                     type="button"
                     onClick={() => setSelectedTemplate(template.id)}
-                    className={`w-full rounded-2xl border p-4 text-left transition ${
+                    className={`w-full rounded-2xl border p-3 text-left transition ${
                       isSelected
                         ? "border-[#8d7770] bg-white/70 shadow-md"
                         : "border-[#d8b7b3] bg-white/40 hover:bg-white/60"
                     }`}
                   >
                     <div className="flex items-center gap-5">
-<div className="relative h-28 w-20 shrink-0 overflow-hidden rounded-sm bg-white shadow-sm">
+<div className="relative h-24 w-[68px] shrink-0 overflow-hidden rounded-sm bg-white shadow-sm">
   <img
     src={`/frames/${template.id}-preview.png`}
     alt={`${template.name} preview`}
@@ -1491,7 +1491,7 @@ useEffect(() => {
                 setPhotos([]);
                 setScreen("camera");
               }}
-              className="mt-8 rounded-full bg-[#ead34f] px-10 py-3 text-sm font-medium text-[#6f6250] shadow-md transition hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-4 rounded-full bg-[#ead34f] px-10 py-3 text-sm font-medium text-[#6f6250] shadow-md transition hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
             >
               USE THIS TEMPLATE
             </button>
@@ -1643,9 +1643,9 @@ onClick={async () => {
 // YOUR STRIP
 if (screen === "strip") {
   return (
-    <main className="min-h-screen bg-[#f7cfd1] flex justify-center">
+    <main className="h-[100dvh] overflow-hidden bg-[#f7cfd1] flex justify-center">
       <div
-        className="relative min-h-screen w-full max-w-md overflow-hidden"
+        className="relative h-[100dvh] w-full max-w-md overflow-hidden"
         style={{
           background:
             "repeating-linear-gradient(90deg, #f7cfd1 0px, #f7cfd1 18px, #fff1f1 18px, #fff1f1 24px, #f7cfd1 24px, #f7cfd1 38px)",
