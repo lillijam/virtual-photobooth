@@ -1826,22 +1826,26 @@ if (screen === "gallery") {
 <div className="relative min-h-[100dvh] w-full max-w-md overflow-visible">
         <section className="relative z-10 min-h-screen px-6 py-10">
 
-          <button
-            type="button"
-            onClick={() => setScreen("strip")}
-            className="sticky top-0 z-50 bg-[#f7cfd1]/90 py-2 text-xs text-[#8d7770] backdrop-blur-sm"
-          >
-            ← Kembali
-          </button>
+<div className="sticky top-0 z-50 -mx-6 bg-[#f7cfd1]/95 px-6 py-3 backdrop-blur-sm">
+  <div className="relative flex items-center justify-center">
 
-          <div className="mt-8 text-center">
-            <h1 className="text-3xl font-serif italic text-[#8d7770]">
-              Guest Gallery
-            </h1>
+    <button
+      type="button"
+      onClick={() => setScreen("strip")}
+      className="absolute left-0 text-xs text-[#8d7770] transition active:scale-90"
+    >
+      ← Kembali
+    </button>
 
-            <p className="mt-2 text-sm text-[#9a817b]">
-              Semua momen, satu kenangan.
-            </p>
+    <h1 className="text-3xl font-serif italic text-[#8d7770]">
+      Guest Gallery
+    </h1>
+
+  </div>
+
+  <p className="mt-2 text-center text-sm text-[#9a817b]">
+    Semua momen, satu kenangan.
+  </p>
             <div className="mt-6 flex justify-center gap-2">
   {[
     { id: "all", label: "Semua" },
