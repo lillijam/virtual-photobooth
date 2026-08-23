@@ -510,6 +510,14 @@ function TwoRFrame({
   );
 }
 
+function AppShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 h-[100svh] w-full overflow-hidden">
+      {children}
+    </div>
+  );
+}
+
 export default function Home() {
 const [screen, setScreen] = useState<Screen>("home");
 const [isHydrated, setIsHydrated] = useState(false);
@@ -1302,7 +1310,8 @@ useEffect(() => {
   // HOME
   if (screen === "home") {
     return (
-      <main className="min-h-screen bg-[#f7cfd1] flex justify-center">
+      <AppShell>
+     <main className="h-full w-full overflow-hidden bg-[#f7cfd1] flex justify-center">
         <div
           className="relative min-h-screen w-full max-w-md overflow-hidden"
           style={{
@@ -1347,6 +1356,7 @@ useEffect(() => {
           </section>
         </div>
       </main>
+        </AppShell>
     );
   }
 
