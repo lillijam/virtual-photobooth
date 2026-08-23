@@ -1504,7 +1504,7 @@ useEffect(() => {
   // PREVIEW
   if (screen === "preview") {
     return (
-      <main className="min-h-[100dvh] bg-[#f7cfd1] flex justify-center overflow-x-hidden">
+      <main className="h-[100dvh] overflow-hidden bg-[#f7cfd1] flex justify-center">
         <div
           className="relative min-h-[100dvh] w-full max-w-md overflow-hidden"
           style={{
@@ -1512,7 +1512,7 @@ useEffect(() => {
               "repeating-linear-gradient(90deg, #f7cfd1 0px, #f7cfd1 18px, #fff1f1 18px, #fff1f1 24px, #f7cfd1 24px, #f7cfd1 38px)",
           }}
         >
-          <section className="relative z-10 flex min-h-[100dvh] flex-col items-center px-5 pb-6 pt-5 text-center sm:px-6 sm:py-10">
+          <section className="relative z-10 flex h-[100dvh] flex-col items-center overflow-hidden px-5 pt-4 text-center sm:px-6 sm:pt-8">
             <h1 className="mt-2 text-3xl font-serif italic text-[#8d7770]">
               Preview
             </h1>
