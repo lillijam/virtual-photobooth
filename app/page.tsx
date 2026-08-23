@@ -1814,6 +1814,7 @@ if (screen === "strip") {
 if (screen === "gallery") {
   return (
 <main
+  id="gallery-scroll"
   className="fixed inset-0 flex h-[100dvh] w-full justify-center overflow-x-hidden overflow-y-scroll"
   style={{
     background:
@@ -1824,23 +1825,23 @@ if (screen === "gallery") {
   }}
 >
 <div className="relative min-h-[100dvh] w-full max-w-md overflow-visible">
-<section className="relative z-10 min-h-screen px-6 py-10">
+<section className="relative z-10 min-h-screen px-5 pb-10 pt-5">
 
-  <div className="mt-8 flex items-center justify-center gap-2">
+<div className="relative flex w-full items-center justify-center">
 
-    <button
-      type="button"
-      onClick={() => setScreen("strip")}
-      className="text-xs text-[#8d7770] transition active:scale-90"
-    >
-      ← Kembali
-    </button>
+  <button
+    type="button"
+    onClick={() => setScreen("strip")}
+    className="absolute left-0 text-[11px] text-[#8d7770] transition active:scale-90"
+  >
+    ← Kembali
+  </button>
 
-    <h1 className="text-3xl font-serif italic text-[#8d7770]">
-      Guest Gallery
-    </h1>
+  <h1 className="text-2xl font-serif italic text-[#8d7770]">
+    Guest Gallery
+  </h1>
 
-  </div>
+</div>
 
   <p className="mt-2 text-center text-sm text-[#9a817b]">
     Semua momen, satu kenangan.
